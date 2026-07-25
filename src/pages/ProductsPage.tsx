@@ -25,7 +25,6 @@ export function ProductsPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
   const [page, setPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -45,9 +44,8 @@ export function ProductsPage() {
     let r = [...products];
     if (search) r = r.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()));
     if (categoryFilter !== 'all') r = r.filter((p) => p.category_id === categoryFilter);
-    if (statusFilter !== 'all') r = r.filter((p) => p.status === statusFilter);
     return r;
-  }, [products, search, categoryFilter, statusFilter]);
+  }, [products, search, categoryFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -93,11 +91,6 @@ export function ProductsPage() {
             <option value="all">Semua Kategori</option>
             {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </Select>
-          <Select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }} className="w-auto whitespace-nowrap">
-            <option value="all">Semua Status</option>
-            <option value="active">Aktif</option>
-            <option value="inactive">Nonaktif</option>
-          </Select>
         </div>
         <Button onClick={() => { setEditingProduct(null); setModalOpen(true); }} className="w-full sm:w-auto shrink-0">
           <Plus className="h-4 w-4" /> Tambah Produk
@@ -126,7 +119,6 @@ export function ProductsPage() {
                     <th className="text-left text-xs font-medium text-gray-500 px-4 py-3 hidden lg:table-cell">Kategori</th>
                     <th className="text-left text-xs font-medium text-gray-500 px-4 py-3 hidden lg:table-cell">Range Harga</th>
                     <th className="text-left text-xs font-medium text-gray-500 px-4 py-3">Total Stok</th>
-                    <th className="text-left text-xs font-medium text-gray-500 px-4 py-3">Status</th>
                     <th className="text-left text-xs font-medium text-gray-500 px-4 py-3 hidden sm:table-cell">Dibuat</th>
                     <th className="px-4 py-3 w-20">Aksi</th>
                   </tr>
@@ -159,7 +151,6 @@ export function ProductsPage() {
                             {formatNumber(stock)}
                           </span>
                         </td>
-                        <td className="px-4 py-3"><Badge color={product.status === 'active' ? 'green' : 'gray'} dot>{product.status === 'active' ? 'Aktif' : 'Nonaktif'}</Badge></td>
                         <td className="px-4 py-3 text-sm text-gray-500 hidden sm:table-cell">{formatDate(product.created_at)}</td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1">
@@ -196,7 +187,6 @@ export function ProductsPage() {
                         <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{product.name}</p>
                         <p className="text-xs text-gray-400">{product.category?.name || '-'} - {product.has_variant ? `${product.variants.length} variant` : 'Tanpa variant'}</p>
                       </div>
-                      <Badge color={product.status === 'active' ? 'green' : 'gray'} dot>{product.status === 'active' ? 'Aktif' : 'Nonaktif'}</Badge>
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3 text-sm">
@@ -304,7 +294,6 @@ interface FormModalProps {
 
 function ProductFormModal({ product, categories, onClose, onSave }: FormModalProps) {
   const { toast } = useToast();
-  // Level 1 - Product
   const [name, setName] = useState(product?.name || '');
   const [categoryId, setCategoryId] = useState(product?.category_id || '');
   const [description, setDescription] = useState(product?.description || '');
@@ -314,19 +303,16 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
   const [productSku, setProductSku] = useState(product?.sku || '');
   const [productPrice, setProductPrice] = useState(String(product?.price ?? ''));
   const [productStock, setProductStock] = useState(String(product?.stock ?? ''));
-  const [status, setStatus] = useState<Product['status']>(product?.status || 'active');
   const [variants, setVariants] = useState<Variant[]>(product?.variants || []);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
 
-  // Accordion state
   const [openVariant, setOpenVariant] = useState<string | null>(null);
-  const [openSize, setOpenSize] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{ type: 'variant' | 'size'; variantId?: string; sizeId?: string; name: string } | null>(null);
 
   const addVariant = () => {
     const v: Variant = {
-      id: generateId(), name: '', sku: '', images: [], status: 'active',
+      id: generateId(), name: '', sku: '',
       has_size: false, price: null, stock: null, sizes: [],
     };
     setVariants((prev) => [...prev, v]);
@@ -342,9 +328,8 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
   };
 
   const addSize = (variantId: string) => {
-    const sz: Size = { id: generateId(), name: '', sku: '', price: 0, stock: 0, images: [], status: 'active' };
+    const sz: Size = { id: generateId(), name: '', price: 0, stock: 0 };
     setVariants((prev) => prev.map((v) => (v.id === variantId ? { ...v, sizes: [...v.sizes, sz] } : v)));
-    setOpenSize(`${variantId}-${sz.id}`);
   };
 
   const updateSize = (variantId: string, sizeId: string, updates: Partial<Size>) => {
@@ -369,7 +354,6 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
       if (!v.has_size && v.price == null) e[`variant-price-${v.id}`] = 'Harga variant harus diisi';
       v.sizes.forEach((s) => {
         if (!s.name.trim()) e[`size-name-${s.id}`] = 'Nama size harus diisi';
-        if (!s.sku.trim()) e[`size-sku-${s.id}`] = 'SKU size harus diisi';
         if (!s.price) e[`size-price-${s.id}`] = 'Harga size harus diisi';
       });
     });
@@ -382,7 +366,7 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
     setSaving(true);
     await onSave({
       name: name.trim(), category_id: categoryId, description: description.trim(),
-      images, video: video[0] || null, has_variant: hasVariant, status,
+      images, video: video[0] || null, has_variant: hasVariant, status: 'active',
       sku: hasVariant ? null : productSku.trim(),
       price: hasVariant ? null : parseFloat(productPrice) || null,
       stock: hasVariant ? null : parseInt(productStock) || 0,
@@ -409,13 +393,11 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
         }
       >
         <div className="space-y-6 pb-4">
-          {/* Product Images & Video */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <FileUpload type="image" multiple value={images} onChange={setImages} label="Gambar Produk" maxFiles={8} />
             <FileUpload type="video" value={video} onChange={setVideo} label="Video Produk (opsional)" />
           </div>
 
-          {/* Product Info */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Input label="Nama Produk" value={name} onChange={(e) => setName(e.target.value)} placeholder="cth. Headphone Wireless" error={errors.name} />
@@ -430,7 +412,6 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
           </div>
           <Textarea label="Deskripsi" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="Deskripsi produk..." />
 
-          {/* Variant Toggle */}
           <div className="flex items-center justify-between rounded-xl border border-gray-200 dark:border-gray-700 p-4">
             <div>
               <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Produk Memiliki Variant</p>
@@ -445,7 +426,6 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
             </button>
           </div>
 
-          {/* No Variant: Product SKU, Price, Stock */}
           {!hasVariant && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 animate-fade-in">
               <Input label="SKU Produk" value={productSku} onChange={(e) => setProductSku(e.target.value)} placeholder="cth. AP-HP-001" error={errors.productSku} />
@@ -454,7 +434,6 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
             </div>
           )}
 
-          {/* Has Variant: Variant accordion */}
           {hasVariant && (
             <div className="space-y-3 animate-fade-in">
               <div className="flex items-center justify-between">
@@ -471,21 +450,22 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
 
               {variants.map((variant, vIdx) => (
                 <div key={variant.id} className="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-                  {/* Variant Header */}
                   <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 dark:bg-gray-800/50">
                     <button onClick={() => setOpenVariant(openVariant === variant.id ? null : variant.id)} className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                       {openVariant === variant.id ? <ChevronDown className="h-4 w-4" /> : <ChevronR className="h-4 w-4" />}
                     </button>
                     <span className="text-xs font-bold text-gray-400">V{vIdx + 1}</span>
                     <span className="text-sm font-medium text-gray-900 dark:text-gray-100 flex-1 truncate">{variant.name || 'Variant tanpa nama'}</span>
-                    {variant.has_size && <Badge color="blue">{variant.sizes.length} size</Badge>}
-                    <Badge color={variant.status === 'active' ? 'green' : 'gray'}>{variant.status === 'active' ? 'Aktif' : 'Nonaktif'}</Badge>
+                    {variant.has_size ? (
+                      <Badge color="blue">{variant.sizes.length} size</Badge>
+                    ) : (
+                      variant.price != null && <span className="text-xs text-gray-500">{formatCurrency(variant.price)}</span>
+                    )}
                     <button onClick={() => setConfirmDelete({ type: 'variant', variantId: variant.id, name: variant.name || `Variant ${vIdx + 1}` })} className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
 
-                  {/* Variant Body */}
                   {openVariant === variant.id && (
                     <div className="p-4 space-y-4 animate-slide-up">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -493,30 +473,16 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
                         <Input label="SKU Variant" value={variant.sku} onChange={(e) => updateVariant(variant.id, { sku: e.target.value })} placeholder="cth. AP-HP-BLK" error={errors[`variant-sku-${variant.id}`]} />
                       </div>
 
-                      <FileUpload type="image" multiple value={variant.images} onChange={(urls) => updateVariant(variant.id, { images: urls })} label="Gambar Variant" maxFiles={5} />
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-700 p-3">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Status</label>
-                          <Select value={variant.status} onChange={(e) => updateVariant(variant.id, { status: e.target.value as 'active' | 'inactive' })}>
-                            <option value="active">Aktif</option>
-                            <option value="inactive">Nonaktif</option>
-                          </Select>
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Varian ini punya Size</p>
+                          <p className="text-xs text-gray-500">Aktifkan jika varian ini memiliki ukuran (S, M, L, dll)</p>
                         </div>
-                        <div className="flex items-end">
-                          <div className="flex items-center justify-between w-full rounded-lg border border-gray-200 dark:border-gray-700 p-3">
-                            <div>
-                              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Gunakan Size</p>
-                              <p className="text-xs text-gray-500">Aktifkan untuk ukuran</p>
-                            </div>
-                            <button type="button" onClick={() => updateVariant(variant.id, { has_size: !variant.has_size })} className={`relative h-6 w-11 rounded-full transition-colors overflow-hidden ${variant.has_size ? 'bg-brand-600' : 'bg-gray-200 dark:bg-gray-700'}`}>
-                              <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${variant.has_size ? 'translate-x-5' : 'translate-x-0'}`} />
-                            </button>
-                          </div>
-                        </div>
+                        <button type="button" onClick={() => updateVariant(variant.id, { has_size: !variant.has_size })} className={`relative h-6 w-11 rounded-full transition-colors overflow-hidden shrink-0 ${variant.has_size ? 'bg-brand-600' : 'bg-gray-200 dark:bg-gray-700'}`}>
+                          <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${variant.has_size ? 'translate-x-5' : 'translate-x-0'}`} />
+                        </button>
                       </div>
 
-                      {/* Without size: price & stock */}
                       {!variant.has_size && (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-in">
                           <Input label="Harga Variant (Rp)" type="number" value={String(variant.price ?? '')} onChange={(e) => updateVariant(variant.id, { price: parseFloat(e.target.value) || null })} placeholder="0" error={errors[`variant-price-${variant.id}`]} />
@@ -524,46 +490,33 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
                         </div>
                       )}
 
-                      {/* With size: Size accordion */}
                       {variant.has_size && (
                         <div className="space-y-3 animate-fade-in">
                           <div className="flex items-center justify-between">
-                            <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300">Size</h5>
+                            <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300">Daftar Size</h5>
                             <Button size="sm" variant="outline" onClick={() => addSize(variant.id)}><Plus className="h-3.5 w-3.5" /> Tambah Size</Button>
                           </div>
 
+                          {variant.sizes.length === 0 && (
+                            <div className="rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-700 p-6 text-center">
+                              <p className="text-xs text-gray-400">Belum ada size. Klik "Tambah Size" untuk menambahkan.</p>
+                            </div>
+                          )}
+
                           {variant.sizes.map((size, sIdx) => (
-                            <div key={size.id} className="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                              <div className="flex items-center gap-3 px-3 py-2.5 bg-gray-50 dark:bg-gray-800/30">
-                                <button onClick={() => setOpenSize(openSize === `${variant.id}-${size.id}` ? null : `${variant.id}-${size.id}`)} className="p-1 text-gray-400">
-                                  {openSize === `${variant.id}-${size.id}` ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronR className="h-3.5 w-3.5" />}
-                                </button>
-                                <span className="text-xs font-bold text-gray-400">S{sIdx + 1}</span>
+                            <div key={size.id} className="rounded-lg border border-gray-200 dark:border-gray-700 p-3 bg-gray-50/50 dark:bg-gray-800/30">
+                              <div className="flex items-center gap-2 mb-3">
+                                <span className="text-xs font-bold text-gray-400 shrink-0">S{sIdx + 1}</span>
                                 <span className="text-sm text-gray-900 dark:text-gray-100 flex-1 truncate">{size.name || 'Size tanpa nama'}</span>
-                                <Badge color={size.status === 'active' ? 'green' : 'gray'}>{size.status === 'active' ? 'Aktif' : 'Nonaktif'}</Badge>
-                                <button onClick={() => setConfirmDelete({ type: 'size', variantId: variant.id, sizeId: size.id, name: size.name || `Size ${sIdx + 1}` })} className="p-1 rounded text-gray-400 hover:text-red-500 transition-colors">
+                                <button onClick={() => setConfirmDelete({ type: 'size', variantId: variant.id, sizeId: size.id, name: size.name || `Size ${sIdx + 1}` })} className="p-1 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shrink-0">
                                   <Trash2 className="h-3.5 w-3.5" />
                                 </button>
                               </div>
-                              {openSize === `${variant.id}-${size.id}` && (
-                                <div className="p-3 space-y-3 animate-slide-up">
-                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <Input label="Nama Size" value={size.name} onChange={(e) => updateSize(variant.id, size.id, { name: e.target.value })} placeholder="cth. 42mm, XL" error={errors[`size-name-${size.id}`]} />
-                                    <Input label="SKU Size" value={size.sku} onChange={(e) => updateSize(variant.id, size.id, { sku: e.target.value })} placeholder="cth. AP-HP-BLK-42" error={errors[`size-sku-${size.id}`]} />
-                                  </div>
-                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <Input label="Harga Size (Rp)" type="number" value={String(size.price)} onChange={(e) => updateSize(variant.id, size.id, { price: parseFloat(e.target.value) || 0 })} placeholder="0" error={errors[`size-price-${size.id}`]} />
-                                    <Input label="Stok Size" type="number" value={String(size.stock)} onChange={(e) => updateSize(variant.id, size.id, { stock: parseInt(e.target.value) || 0 })} placeholder="0" />
-                                  </div>
-                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <Select label="Status" value={size.status} onChange={(e) => updateSize(variant.id, size.id, { status: e.target.value as 'active' | 'inactive' })}>
-                                      <option value="active">Aktif</option>
-                                      <option value="inactive">Nonaktif</option>
-                                    </Select>
-                                  </div>
-                                  <FileUpload type="image" multiple value={size.images} onChange={(urls) => updateSize(variant.id, size.id, { images: urls })} label="Gambar Size" maxFiles={3} />
-                                </div>
-                              )}
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <Input label="Nama Size" value={size.name} onChange={(e) => updateSize(variant.id, size.id, { name: e.target.value })} placeholder="cth. S, M, L, XL" error={errors[`size-name-${size.id}`]} />
+                                <Input label="Harga (Rp)" type="number" value={String(size.price)} onChange={(e) => updateSize(variant.id, size.id, { price: parseFloat(e.target.value) || 0 })} placeholder="0" error={errors[`size-price-${size.id}`]} />
+                                <Input label="Stok" type="number" value={String(size.stock)} onChange={(e) => updateSize(variant.id, size.id, { stock: parseInt(e.target.value) || 0 })} placeholder="0" />
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -574,15 +527,6 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
               ))}
             </div>
           )}
-
-          {/* Product Status */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Status Produk</label>
-            <Select value={status} onChange={(e) => setStatus(e.target.value as Product['status'])}>
-              <option value="active">Aktif</option>
-              <option value="inactive">Nonaktif</option>
-            </Select>
-          </div>
         </div>
       </Modal>
 

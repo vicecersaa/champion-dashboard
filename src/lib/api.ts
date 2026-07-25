@@ -78,18 +78,18 @@ function seedData(): DBData {
       has_variant: true, sku: null, price: null, stock: null,
       variants: [
         {
-          id: 'var-1', name: 'Midnight', sku: 'SW-7-MD', images: [pImg('437037/pexels-photo-437037')],
-          status: 'active', has_size: true, price: null, stock: null,
+          id: 'var-1', name: 'Midnight', sku: 'SW-7-MD',
+          has_size: true, price: null, stock: null,
           sizes: [
-            { id: 'sz-1', name: '42mm', sku: 'SW-7-MD-42', price: 3999000, stock: 15, images: [], status: 'active' },
-            { id: 'sz-2', name: '46mm', sku: 'SW-7-MD-46', price: 4499000, stock: 8, images: [], status: 'active' },
+            { id: 'sz-1', name: '42mm', price: 3999000, stock: 15 },
+            { id: 'sz-2', name: '46mm', price: 4499000, stock: 8 },
           ],
         },
         {
-          id: 'var-2', name: 'Silver', sku: 'SW-7-SL', images: [pImg('437037/pexels-photo-437037')],
-          status: 'active', has_size: true, price: null, stock: null,
+          id: 'var-2', name: 'Silver', sku: 'SW-7-SL',
+          has_size: true, price: null, stock: null,
           sizes: [
-            { id: 'sz-3', name: '42mm', sku: 'SW-7-SL-42', price: 3999000, stock: 5, images: [], status: 'active' },
+            { id: 'sz-3', name: '42mm', price: 3999000, stock: 5 },
           ],
         },
       ],
@@ -104,12 +104,12 @@ function seedData(): DBData {
       has_variant: true, sku: null, price: null, stock: null,
       variants: [
         {
-          id: 'var-3', name: 'Putih', sku: 'TS-PWH', images: [pImg('996329/pexels-photo-996329')],
-          status: 'active', has_size: false, price: 199000, stock: 50, sizes: [],
+          id: 'var-3', name: 'Putih', sku: 'TS-PWH',
+          has_size: false, price: 199000, stock: 50, sizes: [],
         },
         {
-          id: 'var-4', name: 'Hitam', sku: 'TS-HTM', images: [pImg('996329/pexels-photo-996329')],
-          status: 'active', has_size: false, price: 199000, stock: 38, sizes: [],
+          id: 'var-4', name: 'Hitam', sku: 'TS-HTM',
+          has_size: false, price: 199000, stock: 38, sizes: [],
         },
       ],
       status: 'active',
@@ -132,12 +132,12 @@ function seedData(): DBData {
       has_variant: true, sku: null, price: null, stock: null,
       variants: [
         {
-          id: 'var-5', name: 'Merah', sku: 'SP-LR-MR', images: [pImg('2529148/pexels-photo-2529148')],
-          status: 'active', has_size: true, price: null, stock: null,
+          id: 'var-5', name: 'Merah', sku: 'SP-LR-MR',
+          has_size: true, price: null, stock: null,
           sizes: [
-            { id: 'sz-4', name: '40', sku: 'SP-LR-MR-40', price: 899000, stock: 10, images: [], status: 'active' },
-            { id: 'sz-5', name: '41', sku: 'SP-LR-MR-41', price: 899000, stock: 7, images: [], status: 'active' },
-            { id: 'sz-6', name: '42', sku: 'SP-LR-MR-42', price: 899000, stock: 3, images: [], status: 'active' },
+            { id: 'sz-4', name: '40', price: 899000, stock: 10 },
+            { id: 'sz-5', name: '41', price: 899000, stock: 7 },
+            { id: 'sz-6', name: '42', price: 899000, stock: 3 },
           ],
         },
       ],

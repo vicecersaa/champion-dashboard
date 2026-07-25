@@ -3,19 +3,14 @@
 export interface Size {
   id: string;
   name: string;
-  sku: string;
   price: number;
   stock: number;
-  images: string[];
-  status: 'active' | 'inactive';
 }
 
 export interface Variant {
   id: string;
   name: string;
   sku: string;
-  images: string[];
-  status: 'active' | 'inactive';
   has_size: boolean;
   price: number | null;
   stock: number | null;
