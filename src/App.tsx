@@ -8,15 +8,22 @@ import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { ProductsPage } from './pages/ProductsPage';
 import { OrdersPage } from './pages/OrdersPage';
-import { CustomersPage } from './pages/CustomersPage';
+import { BannersPage } from './pages/BannersPage';
+import { CouponsPage } from './pages/CouponsPage';
 import { CategoriesPage } from './pages/CategoriesPage';
-import { InventoryPage } from './pages/InventoryPage';
-import { AdminsPage } from './pages/AdminsPage';
 import { SettingsPage } from './pages/SettingsPage';
 
 function AppContent() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
   const [page, setPage] = useState<PageKey>('dashboard');
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+        <div className="h-8 w-8 border-3 border-brand-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return <LoginPage />;
@@ -27,10 +34,9 @@ function AppContent() {
       case 'dashboard': return <DashboardPage />;
       case 'products': return <ProductsPage />;
       case 'orders': return <OrdersPage />;
-      case 'customers': return <CustomersPage />;
+      case 'banners': return <BannersPage />;
+      case 'coupons': return <CouponsPage />;
       case 'categories': return <CategoriesPage />;
-      case 'inventory': return <InventoryPage />;
-      case 'admins': return <AdminsPage />;
       case 'settings': return <SettingsPage />;
       default: return <DashboardPage />;
     }

@@ -12,10 +12,9 @@ const pageMeta: Record<PageKey, { title: string; subtitle: string }> = {
   dashboard: { title: 'Dashboard', subtitle: 'Selamat datang kembali, berikut ringkasan toko Anda' },
   products: { title: 'Produk', subtitle: 'Kelola katalog produk Anda' },
   orders: { title: 'Pesanan', subtitle: 'Lacak dan proses pesanan pelanggan' },
-  customers: { title: 'Pelanggan', subtitle: 'Lihat dan kelola data pelanggan' },
+  banners: { title: 'Banners', subtitle: 'Kelola banner promosi di halaman utama' },
+  coupons: { title: 'Kupon', subtitle: 'Kelola kupon dan kode diskon' },
   categories: { title: 'Kategori', subtitle: 'Atur produk ke dalam kategori' },
-  inventory: { title: 'Inventory', subtitle: 'Pantau level stok dan riwayat perubahan' },
-  admins: { title: 'Manajemen Admin', subtitle: 'Kelola akun admin' },
   settings: { title: 'Pengaturan', subtitle: 'Konfigurasi tampilan dashboard' },
 };
 

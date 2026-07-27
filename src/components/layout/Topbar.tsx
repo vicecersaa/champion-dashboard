@@ -1,4 +1,4 @@
-import { Menu, Search, Bell } from 'lucide-react';
+import { Menu } from 'lucide-react';
 
 interface TopbarProps {
   title: string;
@@ -18,19 +18,9 @@ export function Topbar({ title, subtitle, onOpenMobile }: TopbarProps) {
         {subtitle && <p className="text-xs text-gray-500 dark:text-gray-400 truncate hidden sm:block">{subtitle}</p>}
       </div>
 
-      <div className="hidden md:flex relative w-64">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-        <input
-          type="text"
-          placeholder="Cari..."
-          className="w-full h-9 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 pl-9 pr-3 text-sm text-gray-700 dark:text-gray-200 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
-        />
-      </div>
+      
 
-      <button className="relative p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-        <Bell className="h-5 w-5" />
-        <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-gray-900" />
-      </button>
+      
     </header>
   );
 }

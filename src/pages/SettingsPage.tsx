@@ -1,16 +1,10 @@
 import { Palette, Check, Sun, Moon } from 'lucide-react';
 import { Card } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
-import { useToast } from '../contexts/ToastContext';
 import { useTheme } from '../contexts/ThemeContext';
 
 export function SettingsPage() {
-  const { toast } = useToast();
+ 
   const { theme, toggleTheme } = useTheme();
-
-  const handleSave = () => {
-    toast('Pengaturan tampilan disimpan', 'success');
-  };
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -53,12 +47,8 @@ export function SettingsPage() {
         </div>
       </Card>
 
-      {/* Save */}
-      <div className="flex justify-end">
-        <Button onClick={handleSave}>
-          <Check className="h-4 w-4" /> Simpan Pengaturan
-        </Button>
-      </div>
+      
+      
     </div>
   );
 }

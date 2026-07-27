@@ -1,49 +1,250 @@
 // ===== Types for E-Commerce Admin Dashboard =====
 
-export interface Size {
-  id: string;
+// ---- Product & Category (sudah sesuai backend) ----
+
+export interface Category {
+  _id: string;
   name: string;
-  price: number;
-  stock: number;
+  slug: string;
+  description: string;
+  image: string;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export interface Variant {
-  id: string;
+export interface CategoryListResponse {
+  items: Category[];
+  pagination: PaginationInfo;
+}
+
+export interface CategoryQueryParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  isActive?: boolean;
+  sort?: string;
+}
+
+export interface CategoryFormPayload {
+  name: string;
+  description: string;
+  sortOrder: number;
+  isActive: boolean;
+  image: File | null;
+}
+
+export interface Banner {
+  _id: string;
+  image: string;
+  link: string;
+  sortOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BannerListResponse {
+  items: Banner[];
+  pagination: PaginationInfo;
+}
+
+export interface BannerQueryParams {
+  page?: number;
+  limit?: number;
+  isActive?: boolean;
+  sort?: string;
+}
+
+export interface BannerFormPayload {
+  link: string;
+  sortOrder: number;
+  isActive: boolean;
+  image: File | null;
+}
+
+export interface Coupon {
+  _id: string;
+  code: string;
+  description: string;
+  type: 'percentage' | 'fixed';
+  value: number;
+  minimumPurchase: number;
+  maximumDiscount: number;
+  usageLimit: number;
+  usedCount: number;
+  usagePerUser: number;
+  startDate: string;
+  endDate: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CouponListResponse {
+  items: Coupon[];
+  pagination: PaginationInfo;
+}
+
+export interface CouponQueryParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  isActive?: boolean;
+  sort?: string;
+}
+
+export interface CouponFormPayload {
+  code: string;
+  description: string;
+  type: 'percentage' | 'fixed';
+  value: number;
+  minimumPurchase: number;
+  maximumDiscount: number;
+  usageLimit: number;
+  usagePerUser: number;
+  startDate: string;
+  endDate: string;
+  isActive: boolean;
+}
+
+export interface ProductSize {
   name: string;
   sku: string;
-  has_size: boolean;
+  price: number;
+  stock: number;
+  isActive: boolean;
+}
+
+export interface ProductVariant {
+  name: string;
+  sku: string;
   price: number | null;
   stock: number | null;
-  sizes: Size[];
+  sizes: ProductSize[];
+  isActive: boolean;
 }
 
 export interface Product {
-  id: string;
-  name: string;
-  category_id: string | null;
-  description: string;
-  images: string[];
-  video: string | null;
-  has_variant: boolean;
-  sku: string | null;
-  price: number | null;
-  stock: number | null;
-  variants: Variant[];
-  status: 'active' | 'inactive';
-  created_at: string;
-  updated_at: string;
-  category?: Category;
-}
-
-export interface Category {
-  id: string;
+  _id: string;
   name: string;
   slug: string;
-  description: string | null;
-  image: string | null;
-  created_at: string;
-  product_count?: number;
+  category: Category;
+  description: string;
+  images: string[];
+  thumbnail: string;
+  video: string;
+  price: number | null;
+  stock: number | null;
+  sku: string;
+  variants: ProductVariant[];
+  minPrice: number;
+  maxPrice: number;
+  totalStock: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
+
+export interface PaginationInfo {
+  page: number;
+  limit: number;
+  totalItems: number;
+  totalPages: number;
+}
+
+export interface ProductListResponse {
+  items: Product[];
+  pagination: PaginationInfo;
+}
+
+export interface ProductQueryParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  isActive?: boolean;
+  sort?: string;
+}
+
+export interface ProductFormPayload {
+  name: string;
+  description: string;
+  category: string;
+
+  sku: string;
+
+  price: number | null;
+  stock: number | null;
+
+  variants: ProductVariant[];
+
+  isActive: boolean;
+
+  images: File[];
+  video: File | null;
+}
+
+// ---- Order (sudah sesuai backend) ----
+
+export interface OrderItem {
+  product: string;
+  name: string;
+  thumbnail: string;
+  variant: string;
+  size: string;
+  sku: string;
+  price: number;
+  quantity: number;
+  subtotal: number;
+}
+
+export interface ShippingAddress {
+  name: string;
+  phone: string;
+  address: string;
+  city?: string;
+  province?: string;
+  postalCode?: string;
+}
+
+export type OrderStatus = 'pending' | 'processing' | 'completed' | 'cancelled';
+export type PaymentStatus = 'paid' | 'pending' | 'failed';
+export type ShippingStatus = 'unfulfilled' | 'shipped' | 'delivered';
+
+export interface Order {
+  _id: string;
+  orderNumber: string;
+  customer: string | null;
+  items: OrderItem[];
+  subtotal: number;
+  shippingCost: number;
+  discount: number;
+  total: number;
+  paymentMethod: string;
+  shippingAddress: ShippingAddress;
+  notes?: string;
+  status: OrderStatus;
+  paymentStatus: PaymentStatus;
+  shippingStatus: ShippingStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OrderListResponse {
+  items: Order[];
+  pagination: PaginationInfo;
+}
+
+export interface OrderQueryParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: OrderStatus;
+  sort?: string;
+}
+
+// ---- Belum disambungkan ke backend (masih placeholder lama) ----
 
 export interface Customer {
   id: string;
@@ -56,35 +257,6 @@ export interface Customer {
   total_spending: number;
   total_orders: number;
   created_at: string;
-}
-
-export interface OrderItem {
-  product_id: string | null;
-  name: string;
-  quantity: number;
-  price: number;
-}
-
-export interface Order {
-  id: string;
-  order_number: string;
-  customer_id: string | null;
-  customer_name: string;
-  items: OrderItem[];
-  subtotal: number;
-  discount: number;
-  tax: number;
-  shipping: number;
-  total: number;
-  order_status: 'pending' | 'processing' | 'completed' | 'cancelled';
-  payment_status: 'paid' | 'pending' | 'failed';
-  shipping_status: 'unfulfilled' | 'shipped' | 'delivered';
-  tracking_number: string | null;
-  shipping_address: string | null;
-  coupon_code: string | null;
-  created_at: string;
-  updated_at: string;
-  customer?: Customer;
 }
 
 export interface Admin {

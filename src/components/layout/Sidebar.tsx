@@ -1,13 +1,14 @@
 import {
-  LayoutDashboard, Package, ShoppingCart, Users, FolderTree,
-  Boxes, UserCog, Settings, ShoppingBag, Moon, Sun, X, LogOut,
+  LayoutDashboard, Package, ShoppingCart, FolderTree,
+  Settings, ShoppingBag, Moon, Sun, X, LogOut,
+  Image, Ticket,
 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 
 export type PageKey =
-  | 'dashboard' | 'products' | 'orders' | 'customers' | 'categories'
-  | 'inventory' | 'admins' | 'settings';
+  | 'dashboard' | 'products' | 'orders' | 'banners' | 'coupons' | 'categories'
+ | 'settings';
 
 interface NavItem {
   key: PageKey;
@@ -19,10 +20,9 @@ const navItems: NavItem[] = [
   { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { key: 'products', label: 'Produk', icon: Package },
   { key: 'orders', label: 'Pesanan', icon: ShoppingCart },
-  { key: 'customers', label: 'Pelanggan', icon: Users },
+  { key: 'banners', label: 'Banners', icon: Image },
+  { key: 'coupons', label: 'Kupon', icon: Ticket },
   { key: 'categories', label: 'Kategori', icon: FolderTree },
-  { key: 'inventory', label: 'Inventory', icon: Boxes },
-  { key: 'admins', label: 'Manajemen Admin', icon: UserCog },
   { key: 'settings', label: 'Pengaturan', icon: Settings },
 ];
 
@@ -52,7 +52,7 @@ export function Sidebar({ current, onNavigate, mobileOpen, onCloseMobile }: Side
               <ShoppingBag className="h-5 w-5 text-white" />
             </div>
             <div>
-              <p className="text-sm font-bold text-gray-900 dark:text-gray-100 leading-tight">Commerce</p>
+              <p className="text-sm font-bold text-gray-900 dark:text-gray-100 leading-tight">Forland Living</p>
               <p className="text-xs text-gray-400 leading-tight">Admin Panel</p>
             </div>
           </div>

@@ -54,17 +54,17 @@ export function LoginPage() {
               <ShoppingBag className="h-6 w-6 text-white" />
             </div>
             <div>
-              <p className="text-lg font-bold text-white leading-tight">Commerce</p>
+              <p className="text-lg font-bold text-white leading-tight">Forland Living</p>
               <p className="text-sm text-white/70 leading-tight">Admin Panel</p>
             </div>
           </div>
         </div>
         <div className="relative z-10 space-y-6">
           <h1 className="text-4xl font-bold text-white leading-tight">
-            Kelola toko online Anda dengan mudah dan profesional
+            Forland Living
           </h1>
           <p className="text-lg text-white/80 leading-relaxed">
-            Dashboard lengkap untuk mengelola produk, pesanan, pelanggan, dan analitik penjualan Anda dalam satu tempat.
+            Dashboard admin untuk mengelola produk, pesanan, dan pelanggan Forland Living.
           </p>
           <div className="space-y-3 pt-4">
             {['Manajemen produk & variant lengkap', 'Pelacakan pesanan real-time', 'Analitik penjualan mendalam'].map((feat) => (
@@ -80,7 +80,7 @@ export function LoginPage() {
           </div>
         </div>
         <div className="relative z-10 text-sm text-white/60">
-          &copy; 2025 Commerce Admin. Semua hak dilindungi.
+          &copy; 2026 Forland Living. Semua hak dilindungi.
         </div>
       </div>
 
@@ -93,7 +93,7 @@ export function LoginPage() {
               <ShoppingBag className="h-5 w-5 text-white" />
             </div>
             <div>
-              <p className="text-base font-bold text-gray-900 dark:text-gray-100 leading-tight">Commerce</p>
+              <p className="text-base font-bold text-gray-900 dark:text-gray-100 leading-tight">Forland Living</p>
               <p className="text-xs text-gray-400 leading-tight">Admin Panel</p>
             </div>
           </div>
@@ -117,7 +117,7 @@ export function LoginPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@commerce.id"
+                  placeholder="Masukan email"
                   className="w-full h-12 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 pl-11 pr-4 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
                   autoComplete="email"
                 />
@@ -151,9 +151,7 @@ export function LoginPage() {
                 <input type="checkbox" className="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500/30" />
                 <span className="text-sm text-gray-600 dark:text-gray-400">Ingat saya</span>
               </label>
-              <button type="button" className="text-sm font-medium text-brand-600 dark:text-brand-400 hover:underline">
-                Lupa kata sandi?
-              </button>
+              
             </div>
 
             <button
@@ -171,13 +169,6 @@ export function LoginPage() {
               )}
             </button>
           </form>
-
-          <div className="mt-8 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 p-4">
-            <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
-              <span className="font-medium text-gray-700 dark:text-gray-300">Akun Demo:</span><br />
-              admin@commerce.id &middot; admin123
-            </p>
-          </div>
         </div>
       </div>
     </div>
