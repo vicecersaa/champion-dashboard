@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
-  ChevronDown, Save, RotateCcw, Plus, Trash2, Sparkles, Tag, LayoutGrid,
+  ChevronDown, Save, Plus, Trash2, Sparkles, LayoutGrid,
   BookOpen, Hammer, Layers, Images, Quote, Mail,
 } from 'lucide-react';
 import { Card } from '../components/ui/Card';
@@ -231,17 +231,11 @@ export function Homepage() {
     }
   }, [form, toast]);
 
-  const handleReset = useCallback(() => {
-    setForm(DEFAULT_CONTENT);
-    toast('Form dikembalikan ke draf awal', 'success');
-  }, [toast]);
+  
 
   // ---- update helpers ----
   const updateHero = (patch: Partial<HomepageFormState['hero']>) =>
     setForm((f) => ({ ...f, hero: { ...f.hero, ...patch } }));
-
-  const updatePromoCard = (idx: number, patch: Partial<HomepageFormState['promoCards'][number]>) =>
-    setForm((f) => ({ ...f, promoCards: f.promoCards.map((c, i) => (i === idx ? { ...c, ...patch } : c)) }));
 
   const updateCollectionMeta = (patch: Partial<Omit<HomepageFormState['collection'], 'items'>>) =>
     setForm((f) => ({ ...f, collection: { ...f.collection, ...patch } }));
@@ -322,10 +316,7 @@ export function Homepage() {
         <p className="text-sm text-gray-500 dark:text-gray-400">
           Ubah copywriting dan gambar di halaman utama. Navbar &amp; footer tidak termasuk di sini.
         </p>
-        <Button variant="outline" size="sm" onClick={handleReset}>
-          <RotateCcw className="h-3.5 w-3.5" />
-          Reset ke Draf
-        </Button>
+        
       </div>
 
       {/* 1. Hero */}
@@ -352,31 +343,7 @@ export function Homepage() {
         <ImageField label="Gambar Hero" value={form.hero.image} onChange={(v) => updateHero({ image: v })} />
       </Section>
 
-      {/* 2. Promo Cards */}
-      <Section
-        id="promo"
-        icon={<Tag className="h-4 w-4" />}
-        title="Kartu Promo"
-        subtitle="3 kartu di bawah hero"
-        active={activeSection === 'promo'}
-        onToggle={() => toggleSection('promo')}
-      >
-        {form.promoCards.map((card, idx) => (
-          <div key={idx} className="p-4 rounded-lg border border-gray-100 dark:border-gray-800 space-y-3">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Kartu {idx + 1}</p>
-            <div className="grid grid-cols-2 gap-4">
-              <Input label="Label" value={card.label} onChange={(e) => updatePromoCard(idx, { label: e.target.value })} />
-              <Input label="Judul" value={card.title} onChange={(e) => updatePromoCard(idx, { title: e.target.value })} />
-            </div>
-            <TextAreaField label="Deskripsi" value={card.description} onChange={(v) => updatePromoCard(idx, { description: v })} rows={2} />
-            <div className="grid grid-cols-2 gap-4">
-              <Input label="Teks CTA" value={card.ctaText} onChange={(e) => updatePromoCard(idx, { ctaText: e.target.value })} />
-              <Input label="Link CTA" value={card.ctaLink} onChange={(e) => updatePromoCard(idx, { ctaLink: e.target.value })} />
-            </div>
-            <ImageField label="Gambar" value={card.image} onChange={(v) => updatePromoCard(idx, { image: v })} />
-          </div>
-        ))}
-      </Section>
+      
 
       {/* 3. Collection Grid */}
       <Section

@@ -1,5 +1,5 @@
-import { useCallback, useState } from 'react';
-import { Search, ShieldCheck, Pencil, Phone, User, MapPin, Package, CalendarClock, StickyNote, AlertCircle, Plus } from 'lucide-react';
+import { useCallback, useState, useEffect, useMemo } from 'react';
+import { Search, ShieldCheck, Pencil, AlertCircle, Plus } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
@@ -59,64 +59,123 @@ function statusLabel(status: WarrantyStatus) {
   }
 }
 
+function WarrantyRowSkeleton() {
+  return (
+    <div className="flex items-center gap-4 px-4 py-4 sm:px-5">
+      <div className="h-10 w-10 shrink-0 rounded-lg skeleton bg-gray-100 dark:bg-gray-800" />
+      <div className="min-w-0 flex-1 space-y-2">
+        <div className="h-4 w-40 skeleton bg-gray-100 dark:bg-gray-800 rounded" />
+        <div className="h-3 w-56 skeleton bg-gray-100 dark:bg-gray-800 rounded" />
+      </div>
+      <div className="hidden h-8 w-24 shrink-0 skeleton bg-gray-100 dark:bg-gray-800 rounded sm:block" />
+    </div>
+  );
+}
+
+function WarrantyRow({ item, onEdit }: { item: Warranty; onEdit: (item: Warranty) => void }) {
+  return (
+    <div className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:gap-4 sm:px-5">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400">
+        <ShieldCheck className="h-4.5 w-4.5" />
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">{item.productName}</p>
+          <Badge color={statusColor(item.status)} dot>{statusLabel(item.status)}</Badge>
+        </div>
+        <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400 truncate">
+          {item.customerName || '-'} &middot; {item.phone}
+          {item.variant ? ` \u00b7 ${item.variant}` : ''}
+        </p>
+        <p className="mt-1 text-xs text-gray-400 truncate">{item.address || '-'}</p>
+      </div>
+
+      <div className="flex items-center justify-between gap-4 sm:justify-end sm:shrink-0">
+        <div className="text-left sm:text-right">
+          <p className="text-xs text-gray-400">Masa Garansi</p>
+          <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
+            {formatDate(item.warrantyStart)} &ndash; {formatDate(item.warrantyEnd)}
+          </p>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => onEdit(item)}>
+          <Pencil className="h-3.5 w-3.5" />
+          Edit
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export function GaransiPage() {
   const { toast } = useToast();
   const [phoneInput, setPhoneInput] = useState('');
-  const [searching, setSearching] = useState(false);
-  const [searched, setSearched] = useState(false);
-  const [result, setResult] = useState<Warranty | null>(null);
+  const [statusFilter, setStatusFilter] = useState<WarrantyStatus | 'all'>('all');
+  const [loadingList, setLoadingList] = useState(false);
+  const [warranties, setWarranties] = useState<Warranty[]>([]);
 
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('edit');
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const handleSearch = useCallback(async () => {
-    const trimmed = phoneInput.trim();
-    if (!trimmed) {
-      toast('Masukkan nomor HP terlebih dahulu', 'warning');
-      return;
-    }
-    setSearching(true);
-    setSearched(false);
+  const loadWarranties = useCallback(async () => {
     try {
-      const found = await api.searchWarrantyByPhone(trimmed);
-      setResult(found);
-      setSearched(true);
-    } catch (e) {
-      toast(e instanceof Error ? e.message : 'Gagal mencari data garansi', 'error');
+      setLoadingList(true);
+      const res = await api.getAllWarranty({ page: 1, limit: 100 });
+      setWarranties(res.items);
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'Gagal mengambil data garansi', 'error');
     } finally {
-      setSearching(false);
+      setLoadingList(false);
     }
-  }, [phoneInput, toast]);
+  }, [toast]);
+
+  useEffect(() => {
+    loadWarranties();
+  }, [loadWarranties]);
+
+  // Filter di sini murni client-side: menyaring nomor HP spesifik dan/atau
+  // status dari data yang sudah dimuat, tidak perlu request baru ke server.
+  const filtered = useMemo(() => {
+    const q = phoneInput.trim();
+    return warranties.filter((w) => {
+      const matchesPhone = !q || w.phone.includes(q);
+      const matchesStatus = statusFilter === 'all' || w.status === statusFilter;
+      return matchesPhone && matchesStatus;
+    });
+  }, [warranties, phoneInput, statusFilter]);
 
   const openCreate = useCallback(() => {
     setFormMode('create');
+    setEditingId(null);
     setForm(emptyForm());
     setFormOpen(true);
   }, []);
 
-  const openEdit = useCallback(() => {
-    if (!result) return;
+  const openEdit = useCallback((item: Warranty) => {
     setFormMode('edit');
+    setEditingId(item._id);
     setForm({
-      phone: result.phone,
-      customerName: result.customerName,
-      address: result.address,
-      productName: result.productName,
-      variant: result.variant || '',
-      purchaseDate: toDateInputValue(result.purchaseDate),
-      warrantyStart: toDateInputValue(result.warrantyStart),
-      warrantyEnd: toDateInputValue(result.warrantyEnd),
-      status: result.status,
-      notes: result.notes || '',
+      phone: item.phone,
+      customerName: item.customerName,
+      address: item.address,
+      productName: item.productName,
+      variant: item.variant || '',
+      purchaseDate: toDateInputValue(item.purchaseDate),
+      warrantyStart: toDateInputValue(item.warrantyStart),
+      warrantyEnd: toDateInputValue(item.warrantyEnd),
+      status: item.status,
+      notes: item.notes || '',
     });
     setFormOpen(true);
-  }, [result]);
+  }, []);
 
   const closeForm = useCallback(() => {
     setFormOpen(false);
     setForm(null);
+    setEditingId(null);
   }, []);
 
   const validateForm = useCallback((f: FormState, requirePhone: boolean) => {
@@ -142,7 +201,7 @@ export function GaransiPage() {
       if (!validateForm(form, true)) return;
       setSaving(true);
       try {
-        const created = await api.createWarranty({
+        await api.createWarranty({
           phone: form.phone.trim(),
           customerName: form.customerName.trim(),
           address: form.address.trim(),
@@ -154,11 +213,9 @@ export function GaransiPage() {
           status: form.status,
           notes: form.notes.trim(),
         });
-        setResult(created);
-        setPhoneInput(created.phone);
-        setSearched(true);
         toast('Garansi baru berhasil ditambahkan', 'success');
         closeForm();
+        await loadWarranties();
       } catch (e) {
         toast(e instanceof Error ? e.message : 'Gagal menambahkan garansi', 'error');
       } finally {
@@ -167,13 +224,12 @@ export function GaransiPage() {
       return;
     }
 
-    // edit mode
-    if (!result) return;
+    if (!editingId) return;
     if (!validateForm(form, false)) return;
 
     setSaving(true);
     try {
-      const updated = await api.updateWarranty(result._id, {
+      await api.updateWarranty(editingId, {
         customerName: form.customerName.trim(),
         address: form.address.trim(),
         productName: form.productName.trim(),
@@ -184,147 +240,80 @@ export function GaransiPage() {
         status: form.status,
         notes: form.notes.trim(),
       });
-      setResult(updated);
       toast('Data garansi berhasil diperbarui', 'success');
       closeForm();
+      await loadWarranties();
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Gagal menyimpan data garansi', 'error');
     } finally {
       setSaving(false);
     }
-  }, [formMode, result, form, toast, closeForm, validateForm]);
+  }, [formMode, editingId, form, toast, closeForm, validateForm, loadWarranties]);
 
   return (
     <div className="space-y-4">
-      {/* Toolbar: search + add button (no card wrapper, no label — matches Kategori page pattern) */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-        <div className="relative flex-1 sm:max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <input
-            type="tel"
+      {/* Search + Filter + Add */}
+      <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+        <div className="flex flex-col sm:flex-row gap-3 sm:flex-1">
+          <Input
             placeholder="Cari nomor HP..."
             value={phoneInput}
             onChange={(e) => setPhoneInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-            className="w-full pl-9 pr-3 py-2.5 text-sm rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500"
+            icon={<Search className="h-4 w-4" />}
+            className="sm:flex-1 sm:max-w-md"
           />
+          <Select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as WarrantyStatus | 'all')}
+            className="sm:w-44"
+          >
+            <option value="all">Semua Status</option>
+            <option value="active">Aktif</option>
+            <option value="expired">Kadaluarsa</option>
+            <option value="claimed">Sudah Diklaim</option>
+            <option value="void">Dibatalkan</option>
+          </Select>
         </div>
-
-        <Button onClick={handleSearch} disabled={searching} variant="secondary">
-          <Search className="h-4 w-4" />
-          {searching ? 'Mencari...' : 'Cari'}
+        <Button onClick={openCreate}>
+          <Plus className="h-4 w-4" />
+          Tambah Garansi Baru
         </Button>
-
-        <div className="sm:ml-auto">
-          <Button onClick={openCreate}>
-            <Plus className="h-4 w-4" />
-            Tambah Garansi Baru
-          </Button>
-        </div>
       </div>
 
-      {/* Result */}
-      {searching ? (
-        <Card>
-          <div className="space-y-3">
-            <div className="h-5 w-40 skeleton bg-gray-100 dark:bg-gray-800 rounded" />
-            <div className="h-4 w-full skeleton bg-gray-100 dark:bg-gray-800 rounded" />
-            <div className="h-4 w-2/3 skeleton bg-gray-100 dark:bg-gray-800 rounded" />
+      {/* List */}
+      {loadingList ? (
+        <Card className="!p-0 overflow-hidden">
+          <div className="divide-y divide-gray-100 dark:divide-gray-800">
+            <WarrantyRowSkeleton />
+            <WarrantyRowSkeleton />
+            <WarrantyRowSkeleton />
           </div>
         </Card>
-      ) : searched && !result ? (
+      ) : filtered.length === 0 ? (
         <Card>
           <EmptyState
             icon={<AlertCircle className="h-7 w-7" />}
-            title="Data garansi tidak ditemukan"
-            description={`Tidak ada data garansi terdaftar untuk nomor "${phoneInput.trim()}".`}
+            title={phoneInput.trim() ? 'Data garansi tidak ditemukan' : 'Belum ada data garansi'}
+            description={
+              phoneInput.trim()
+                ? `Tidak ada data garansi terdaftar untuk nomor "${phoneInput.trim()}".`
+                : 'Belum ada garansi yang terdaftar. Tambahkan garansi baru untuk pembelian yang masuk lewat WA.'
+            }
           />
           <div className="flex justify-center mt-4">
             <Button variant="outline" size="sm" onClick={openCreate}>
               <Plus className="h-3.5 w-3.5" />
-              Daftarkan Garansi untuk Nomor Ini
+              Daftarkan Garansi Baru
             </Button>
-          </div>
-        </Card>
-      ) : searched && result ? (
-        <Card>
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-            <div className="flex items-start gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400 shrink-0">
-                <ShieldCheck className="h-5 w-5" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <p className="font-semibold text-gray-900 dark:text-gray-100">{result.productName}</p>
-                  <Badge color={statusColor(result.status)} dot>{statusLabel(result.status)}</Badge>
-                </div>
-                {result.variant && (
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Varian: {result.variant}</p>
-                )}
-              </div>
-            </div>
-            <Button variant="outline" size="sm" onClick={openEdit}>
-              <Pencil className="h-3.5 w-3.5" />
-              Edit
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-5 pt-5 border-t border-gray-100 dark:border-gray-800">
-            <div className="flex items-start gap-2.5">
-              <User className="h-4 w-4 text-gray-400 mt-0.5 shrink-0" />
-              <div>
-                <p className="text-xs text-gray-400">Nama Pelanggan</p>
-                <p className="text-sm text-gray-800 dark:text-gray-200">{result.customerName || '-'}</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-2.5">
-              <Phone className="h-4 w-4 text-gray-400 mt-0.5 shrink-0" />
-              <div>
-                <p className="text-xs text-gray-400">Nomor HP</p>
-                <p className="text-sm text-gray-800 dark:text-gray-200">{result.phone}</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-2.5 sm:col-span-2">
-              <MapPin className="h-4 w-4 text-gray-400 mt-0.5 shrink-0" />
-              <div>
-                <p className="text-xs text-gray-400">Alamat</p>
-                <p className="text-sm text-gray-800 dark:text-gray-200">{result.address || '-'}</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-2.5">
-              <Package className="h-4 w-4 text-gray-400 mt-0.5 shrink-0" />
-              <div>
-                <p className="text-xs text-gray-400">Tanggal Pembelian</p>
-                <p className="text-sm text-gray-800 dark:text-gray-200">{formatDate(result.purchaseDate)}</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-2.5">
-              <CalendarClock className="h-4 w-4 text-gray-400 mt-0.5 shrink-0" />
-              <div>
-                <p className="text-xs text-gray-400">Masa Garansi</p>
-                <p className="text-sm text-gray-800 dark:text-gray-200">
-                  {formatDate(result.warrantyStart)} &ndash; {formatDate(result.warrantyEnd)}
-                </p>
-              </div>
-            </div>
-            {result.notes && (
-              <div className="flex items-start gap-2.5 sm:col-span-2">
-                <StickyNote className="h-4 w-4 text-gray-400 mt-0.5 shrink-0" />
-                <div>
-                  <p className="text-xs text-gray-400">Catatan Admin</p>
-                  <p className="text-sm text-gray-800 dark:text-gray-200">{result.notes}</p>
-                </div>
-              </div>
-            )}
           </div>
         </Card>
       ) : (
-        <Card>
-          <EmptyState
-            icon={<ShieldCheck className="h-7 w-7" />}
-            title="Cek Klaim Garansi"
-            description="Masukkan nomor HP pelanggan untuk melihat detail garansi produk yang terdaftar, atau tambahkan garansi baru untuk pembelian yang masuk lewat WA."
-          />
+        <Card className="!p-0 overflow-hidden">
+          <div className="divide-y divide-gray-100 dark:divide-gray-800">
+            {filtered.map((item) => (
+              <WarrantyRow key={item._id} item={item} onEdit={openEdit} />
+            ))}
+          </div>
         </Card>
       )}
 

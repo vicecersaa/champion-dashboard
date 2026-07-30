@@ -30,6 +30,7 @@ import type {
   HomepageFormState,
 } from "./types";
 
+
 const API_BASE_URL =
   "https://forland-backend-production.up.railway.app/api/v1";
 
@@ -441,6 +442,31 @@ async createWarranty(payload: WarrantyFormPayload): Promise<Warranty> {
     method: 'POST',
     body: JSON.stringify(payload),
   });
+},
+
+async getAllWarranty(params?: {
+    page?: number;
+    limit?: number;
+}) {
+
+    const query = new URLSearchParams();
+
+    if (params?.page)
+        query.set("page", String(params.page));
+
+    if (params?.limit)
+        query.set("limit", String(params.limit));
+
+    return apiFetch<{
+        items: Warranty[];
+        pagination: {
+            page: number;
+            totalPages: number;
+            totalItems: number;
+            limit: number;
+        };
+    }>(`/admin/warranty?${query.toString()}`);
+
 },
 
 async searchWarrantyByPhone(phone: string): Promise<Warranty | null> {
