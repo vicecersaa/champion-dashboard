@@ -64,6 +64,162 @@ export interface BannerFormPayload {
   image: File | null;
 }
 
+// ---- Garansi ----
+
+export type WarrantyStatus = 'active' | 'expired' | 'claimed' | 'void';
+
+export interface Warranty {
+  _id: string;
+  phone: string;
+  customerName: string;
+  address: string;
+  productName: string;
+  variant: string;
+  purchaseDate: string;
+  warrantyStart: string;
+  warrantyEnd: string;
+  status: WarrantyStatus;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WarrantyFormPayload {
+  phone: string;
+  customerName: string;
+  address: string;
+  productName: string;
+  variant: string;
+  purchaseDate: string;
+  warrantyStart: string;
+  warrantyEnd: string;
+  status: WarrantyStatus;
+  notes: string;
+}
+
+// ---- Homepage Content ----
+
+export interface HomepageHero {
+  badge: string;
+  title: string;
+  description: string;
+  primaryCtaText: string;
+  primaryCtaLink: string;
+  secondaryCtaText: string;
+  secondaryCtaLink: string;
+  smallText: string;
+  image: string;
+}
+
+export interface HomepagePromoCard {
+  label: string;
+  title: string;
+  description: string;
+  ctaText: string;
+  ctaLink: string;
+  image: string;
+}
+
+export interface HomepageCollectionItem {
+  title: string;
+  subtitle: string;
+  link: string;
+  image: string;
+}
+
+export interface HomepageCollectionSection {
+  label: string;
+  title: string;
+  viewAllText: string;
+  viewAllLink: string;
+  items: HomepageCollectionItem[];
+}
+
+export interface HomepagePhilosophy {
+  label: string;
+  title: string;
+  paragraph1: string;
+  paragraph2: string;
+  image: string;
+}
+
+export interface HomepageCraftItem {
+  number: string;
+  title: string;
+  description: string;
+}
+
+export interface HomepageCraftsmanship {
+  label: string;
+  title: string;
+  intro: string;
+  items: HomepageCraftItem[];
+  image: string;
+}
+
+export interface HomepageMaterialStudy {
+  label: string;
+  title: string;
+  paragraph: string;
+  ctaText: string;
+  ctaLink: string;
+  image: string;
+}
+
+export interface HomepageGallery {
+  title: string;
+  images: string[];
+}
+
+export interface HomepageTestimonial {
+  quote: string;
+  name: string;
+  location: string;
+  rating: number;
+}
+
+export interface HomepageTestimonialSection {
+  label: string;
+  title: string;
+  testimonials: HomepageTestimonial[];
+}
+
+export interface HomepageNewsletter {
+  label: string;
+  title: string;
+  buttonText: string;
+  disclaimer: string;
+}
+
+export interface HomepageContent {
+  hero: HomepageHero;
+  promoCards: HomepagePromoCard[];
+  collection: HomepageCollectionSection;
+  philosophy: HomepagePhilosophy;
+  craftsmanship: HomepageCraftsmanship;
+  materialStudy: HomepageMaterialStudy;
+  gallery: HomepageGallery;
+  testimonials: HomepageTestimonialSection;
+  newsletter: HomepageNewsletter;
+  updatedAt?: string;
+}
+
+// Form state = sama seperti HomepageContent, tapi setiap field "image"
+// bisa berupa string (URL lama) ATAU File (upload baru)
+export interface HomepageFormState {
+  hero: Omit<HomepageHero, 'image'> & { image: string | File };
+  promoCards: (Omit<HomepagePromoCard, 'image'> & { image: string | File })[];
+  collection: Omit<HomepageCollectionSection, 'items'> & {
+    items: (Omit<HomepageCollectionItem, 'image'> & { image: string | File })[];
+  };
+  philosophy: Omit<HomepagePhilosophy, 'image'> & { image: string | File };
+  craftsmanship: Omit<HomepageCraftsmanship, 'image'> & { image: string | File };
+  materialStudy: Omit<HomepageMaterialStudy, 'image'> & { image: string | File };
+  gallery: Omit<HomepageGallery, 'images'> & { images: (string | File)[] };
+  testimonials: HomepageTestimonialSection;
+  newsletter: HomepageNewsletter;
+}
+
 export interface Coupon {
   _id: string;
   code: string;

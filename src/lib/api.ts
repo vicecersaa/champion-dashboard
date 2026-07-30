@@ -24,6 +24,10 @@ import type {
   CouponListResponse,
   CouponQueryParams,
   CouponFormPayload,
+  Warranty,
+  WarrantyFormPayload,  
+  HomepageContent,
+  HomepageFormState,
 } from "./types";
 
 const API_BASE_URL =
@@ -102,6 +106,58 @@ async function apiFetch<T>(
   }
 
   return (json?.data ?? json) as T;
+}
+
+function buildHomepageFormData(form: HomepageFormState): FormData {
+  const fd = new FormData();
+
+  const appendImage = (key: string, value: string | File): string | null => {
+    if (value instanceof File) {
+      fd.append(key, value);
+      return null; // null = "ada file baru diunggah di slot ini", backend isi dari file
+    }
+    return value; // string url lama, tidak berubah
+  };
+
+  const metaHero = { ...form.hero, image: appendImage('heroImage', form.hero.image) };
+
+  const metaPromoCards = form.promoCards.map((c, i) => ({
+    ...c,
+    image: appendImage(`promoImage${i}`, c.image),
+  }));
+
+  const metaCollection = {
+    ...form.collection,
+    items: form.collection.items.map((it, i) => ({
+      ...it,
+      image: appendImage(`collectionImage${i}`, it.image),
+    })),
+  };
+
+  const metaPhilosophy = { ...form.philosophy, image: appendImage('philosophyImage', form.philosophy.image) };
+  const metaCraftsmanship = { ...form.craftsmanship, image: appendImage('craftImage', form.craftsmanship.image) };
+  const metaMaterialStudy = { ...form.materialStudy, image: appendImage('materialImage', form.materialStudy.image) };
+
+  const metaGallery = {
+    ...form.gallery,
+    images: form.gallery.images.map((img, i) => appendImage(`galleryImage${i}`, img)),
+  };
+
+  const meta = {
+    hero: metaHero,
+    promoCards: metaPromoCards,
+    collection: metaCollection,
+    philosophy: metaPhilosophy,
+    craftsmanship: metaCraftsmanship,
+    materialStudy: metaMaterialStudy,
+    gallery: metaGallery,
+    testimonials: form.testimonials,
+    newsletter: form.newsletter,
+  };
+
+  fd.append('content', JSON.stringify(meta));
+
+  return fd;
 }
 
 function buildProductFormData(
@@ -376,6 +432,51 @@ async updateCoupon(id: string, payload: Partial<CouponFormPayload>): Promise<Cou
 async deleteCoupon(id: string): Promise<void> {
   return apiFetch<void>(`/admin/coupons/${id}`, {
     method: 'DELETE',
+  });
+},
+
+// --- Warranty ---
+async createWarranty(payload: WarrantyFormPayload): Promise<Warranty> {
+  return apiFetch<Warranty>('/admin/warranty', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+},
+
+async searchWarrantyByPhone(phone: string): Promise<Warranty | null> {
+  const res = await fetch(
+    `${API_BASE_URL}/admin/warranty/search?phone=${encodeURIComponent(phone)}`,
+    { credentials: 'include' }
+  );
+
+  if (res.status === 404) return null;
+
+  const json = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    throw new Error(json?.message || `Request gagal (${res.status})`);
+  }
+
+  return (json?.data ?? json) as Warranty;
+},
+
+async updateWarranty(id: string, payload: Partial<WarrantyFormPayload>): Promise<Warranty> {
+  return apiFetch<Warranty>(`/admin/warranty/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+},
+
+// --- Homepage Content ---
+async getHomepageContent(): Promise<HomepageContent> {
+  return apiFetch<HomepageContent>('/admin/homepage');
+},
+
+async updateHomepageContent(form: HomepageFormState): Promise<HomepageContent> {
+  const formData = buildHomepageFormData(form);
+  return apiFetch<HomepageContent>('/admin/homepage', {
+    method: 'PUT',
+    body: formData,
   });
 },
 

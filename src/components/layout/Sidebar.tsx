@@ -1,5 +1,6 @@
 import {
   LayoutDashboard, Package, ShoppingCart, FolderTree,
+  ShieldCheck,
   Settings, ShoppingBag, Moon, Sun, X, LogOut,
   Image, Ticket,
 } from 'lucide-react';
@@ -7,8 +8,8 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 
 export type PageKey =
-  | 'dashboard' | 'products' | 'orders' | 'banners' | 'coupons' | 'categories'
- | 'settings';
+  | 'dashboard' | 'products' | 'orders' | 'banners' | 'coupons' | 'categories' | 'garansi'
+ | 'settings' | 'homepage';
 
 interface NavItem {
   key: PageKey;
@@ -18,11 +19,13 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { key: 'homepage', label: 'Homepage', icon: LayoutDashboard },
   { key: 'products', label: 'Produk', icon: Package },
   { key: 'orders', label: 'Pesanan', icon: ShoppingCart },
   { key: 'banners', label: 'Banners', icon: Image },
   { key: 'coupons', label: 'Kupon', icon: Ticket },
-  { key: 'categories', label: 'Kategori', icon: FolderTree },
+  { key: 'categories', label: 'Kategori', icon: FolderTree }, 
+  { key: 'garansi', label: 'Garansi', icon: ShieldCheck },
   { key: 'settings', label: 'Pengaturan', icon: Settings },
 ];
 

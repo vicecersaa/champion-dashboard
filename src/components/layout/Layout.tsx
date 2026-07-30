@@ -10,11 +10,14 @@ interface LayoutProps {
 
 const pageMeta: Record<PageKey, { title: string; subtitle: string }> = {
   dashboard: { title: 'Dashboard', subtitle: 'Selamat datang kembali, berikut ringkasan toko Anda' },
+  
   products: { title: 'Produk', subtitle: 'Kelola katalog produk Anda' },
+  homepage: { title: 'Homepage', subtitle: 'Kelola halaman website anda' },
   orders: { title: 'Pesanan', subtitle: 'Lacak dan proses pesanan pelanggan' },
   banners: { title: 'Banners', subtitle: 'Kelola banner promosi di halaman utama' },
   coupons: { title: 'Kupon', subtitle: 'Kelola kupon dan kode diskon' },
   categories: { title: 'Kategori', subtitle: 'Atur produk ke dalam kategori' },
+  garansi: { title: 'Garansi', subtitle: 'Claim garansi pembelian anda' },
   settings: { title: 'Pengaturan', subtitle: 'Konfigurasi tampilan dashboard' },
 };
 

@@ -12,6 +12,8 @@ import { BannersPage } from './pages/BannersPage';
 import { CouponsPage } from './pages/CouponsPage';
 import { CategoriesPage } from './pages/CategoriesPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { GaransiPage } from './pages/GaransiPage';
+import { Homepage } from './pages/Homepage';
 
 function AppContent() {
   const { isAuthenticated, loading } = useAuth();
@@ -32,12 +34,14 @@ function AppContent() {
   const renderPage = () => {
     switch (page) {
       case 'dashboard': return <DashboardPage />;
+      case 'homepage': return <Homepage />;
       case 'products': return <ProductsPage />;
       case 'orders': return <OrdersPage />;
       case 'banners': return <BannersPage />;
       case 'coupons': return <CouponsPage />;
       case 'categories': return <CategoriesPage />;
       case 'settings': return <SettingsPage />;
+      case 'garansi': return <GaransiPage />;
       default: return <DashboardPage />;
     }
   };
