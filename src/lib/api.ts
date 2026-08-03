@@ -582,10 +582,10 @@ async bulkDeleteProducts(ids: string[]): Promise<void> {
 },
   async deleteProduct(
   id: string
-): Promise<Product> {
+): Promise<void> {
 
-  return apiFetch<Product>(
-    `/admin/products/${id}`,
+  return apiFetch<void>(
+    `/admin/products/${id}/permanent`,
     {
       method: "DELETE",
     }
