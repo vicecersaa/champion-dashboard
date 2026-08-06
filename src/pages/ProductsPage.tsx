@@ -973,30 +973,31 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
   />
 )}
 
-                              {variant.image && (
-                                <button
-                                  type="button"
-                                  onClick={async (e) => {
-                                    e.preventDefault();
-                                    console.log('hapus gambar variant:', { product: product?._id, vIdx });
-                                    if (product) {
-  try {
-    await api.removeVariantImage(product._id, vIdx);
-    toast('Gambar dihapus', 'success');
-  } catch {
-    toast('Gagal menghapus gambar', 'error');
-  }
-}
-                                    updateVariant(vIdx, { image: '', imageKey: '' });
-                                  }}
-                                  className="absolute top-1 right-1 h-5 w-5 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold z-10"
-                                >
-                                  ×
-                                </button>
-                              )}
+                             {variant.image && (
+  <button
+    type="button"
+    onClick={async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('hapus gambar variant:', { product: product?._id, vIdx });
+      if (product) {
+        try {
+          await api.removeVariantImage(product._id, vIdx);
+          toast('Gambar dihapus', 'success');
+        } catch (err) {
+          console.error('error hapus:', err);
+          toast('Gagal menghapus gambar', 'error');
+        }
+      }
+      updateVariant(vIdx, { image: '', imageKey: '' });
+    }}
+    className="absolute top-1 right-1 h-5 w-5 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold z-20"
+  >
+    ×
+  </button>
+)}
 
-                              {/* ── FIXED: hanya satu handler upload, cek _id untuk bedakan persisted vs baru ── */}
-                              <label className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+<label className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer z-10">
                                 <input
                                   type="file"
                                   accept="image/*"
