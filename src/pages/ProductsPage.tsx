@@ -978,6 +978,7 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
                                   type="button"
                                   onClick={async (e) => {
                                     e.preventDefault();
+                                    console.log('hapus gambar variant:', { product: product?._id, vIdx });
                                     if (product) {
   try {
     await api.removeVariantImage(product._id, vIdx);
