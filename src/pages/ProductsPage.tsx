@@ -67,13 +67,16 @@ export function ProductsPage() {
   const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
 
   const handleSave = async (formPayload: {
+    
     name: string; description: string; category: string;
     isVariantMode: boolean; sku: string; price: string; stock: string;
     variants: ProductVariant[];
     newImages: File[]; existingImages: string[]; imageOrder: string[];
     newVideo: File | null; removeVideo: boolean;
     isActive: boolean;
+    
   }) => {
+    console.log('category yang dikirim:', formPayload.category);
     try {
       const payload = {
         name: formPayload.name,
