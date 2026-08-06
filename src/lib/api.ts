@@ -167,41 +167,153 @@ function buildProductFormData(
 
   const formData = new FormData();
 
+
+  // =====================
+  // BASIC FIELD
+  // =====================
+
   if (payload.name !== undefined)
     formData.append("name", payload.name);
+
 
   if (payload.description !== undefined)
     formData.append("description", payload.description);
 
+
   if (payload.category !== undefined)
     formData.append("category", payload.category);
 
+
   if (payload.price != null)
-    formData.append("price", String(payload.price));
+    formData.append(
+      "price",
+      String(payload.price)
+    );
+
 
   if (payload.stock != null)
-    formData.append("stock", String(payload.stock));
+    formData.append(
+      "stock",
+      String(payload.stock)
+    );
+
 
   if (payload.sku !== undefined)
-    formData.append("sku", payload.sku);
+    formData.append(
+      "sku",
+      payload.sku
+    );
+
 
   if (payload.isActive !== undefined)
-    formData.append("isActive", String(payload.isActive));
+    formData.append(
+      "isActive",
+      String(payload.isActive)
+    );
 
-  if (payload.variants !== undefined)
-    formData.append("variants", JSON.stringify(payload.variants));
 
-  payload.images?.forEach((file) => {
-    formData.append("images", file);
+
+  // =====================
+  // VARIANTS
+  // =====================
+
+  if (payload.variants !== undefined) {
+
+  const cleanVariants = payload.variants.map((variant:any)=>{
+
+    const {
+      image,
+      ...rest
+    } = variant;
+
+    const cleanImage = (image as any) instanceof File
+  ? ""
+  : typeof image === "string" && !image.startsWith("blob:")
+    ? image
+    : "";
+
+    return {
+      ...rest,
+      image: cleanImage,
+      imageKey: variant.imageKey || ""
+    };
+
   });
 
-  if (payload.imageOrder && payload.imageOrder.length > 0) {
-    formData.append("imageOrder", JSON.stringify(payload.imageOrder));
+  console.log('variants before save:', payload.variants.map((v: any) => ({ name: v.name, image: v.image })));
+  formData.append(
+    "variants",
+    JSON.stringify(cleanVariants)
+  );
+
+
+  payload.variants.forEach((variant:any)=>{
+
+    if(variant.image instanceof File){
+
+      formData.append(
+        "variantImages",
+        variant.image
+      );
+
+    }
+
+  });
+
+}
+
+
+
+  // =====================
+  // PRODUCT IMAGES
+  // =====================
+
+  payload.images?.forEach(
+    (file)=>{
+
+      formData.append(
+        "images",
+        file
+      );
+
+    }
+  );
+
+
+
+  // =====================
+  // IMAGE ORDER
+  // =====================
+
+  if (
+    payload.imageOrder &&
+    payload.imageOrder.length > 0
+  ) {
+
+    formData.append(
+      "imageOrder",
+      JSON.stringify(
+        payload.imageOrder
+      )
+    );
+
   }
 
+
+
+  // =====================
+  // VIDEO
+  // =====================
+
   if (payload.video) {
-    formData.append("video", payload.video);
+
+    formData.append(
+      "video",
+      payload.video
+    );
+
   }
+
 
   return formData;
 }
@@ -706,5 +818,20 @@ async reorderProductImages(id: string, images: string[]): Promise<Product> {
     method: 'PATCH',
     body: JSON.stringify({ images }),
   });
-}
+},
+
+async setVariantImage(productId: string, variantIndex: number, file: File): Promise<Product> {
+  const formData = new FormData();
+  formData.append('images', file);
+  return apiFetch<Product>(`/admin/products/${productId}/variants/${variantIndex}/image`, {
+    method: 'POST',
+    body: formData,
+  });
+},
+
+async removeVariantImage(productId: string, variantIndex: number): Promise<Product> {
+  return apiFetch<Product>(`/admin/products/${productId}/variants/${variantIndex}/image`, {
+    method: 'DELETE',
+  });
+},
 };

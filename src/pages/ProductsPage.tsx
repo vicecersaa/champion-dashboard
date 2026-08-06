@@ -32,7 +32,6 @@ export function ProductsPage() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
 
-  // --- Bulk delete state ---
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
@@ -91,12 +90,9 @@ export function ProductsPage() {
 
       if (editingProduct) {
         await api.updateProduct(editingProduct._id, payload);
-
-        // Reorder existing images via dedicated endpoint kalau ada urutan baru
         if (formPayload.imageOrder.length > 0) {
           await api.reorderProductImages(editingProduct._id, formPayload.imageOrder);
         }
-
         toast(formPayload.isActive ? 'Produk berhasil dipublish' : 'Produk disimpan sebagai draft', 'success');
       } else {
         await api.createProduct(payload);
@@ -177,11 +173,7 @@ export function ProductsPage() {
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
           {selectedIds.length > 0 && (
-            <Button
-              variant="danger"
-              onClick={() => setBulkDeleteOpen(true)}
-              className="shrink-0"
-            >
+            <Button variant="danger" onClick={() => setBulkDeleteOpen(true)} className="shrink-0">
               <Trash2 className="h-4 w-4" /> Hapus ({selectedIds.length})
             </Button>
           )}
@@ -405,41 +397,31 @@ export function ProductsPage() {
 }
 
 // ─────────────────────────────────────────────
-// FIX 2: Currency input helper
-// Strips semua non-digit lalu return angka bersih (string)
+// Currency input helper
 // ─────────────────────────────────────────────
 function parseCurrencyInput(raw: string): string {
-  // Hapus semua karakter selain digit
   const digits = raw.replace(/[^\d]/g, '');
   return digits === '' ? '' : String(parseInt(digits, 10));
 }
 
-// ─────────────────────────────────────────────
-// FIX 2: Komponen CurrencyInput
-// Tampilkan formatted (1.000.000) tapi simpan nilai bersih
-// ─────────────────────────────────────────────
 interface CurrencyInputProps {
   label: string;
-  value: string; // nilai angka bersih, e.g. "150000"
+  value: string;
   onChange: (cleanValue: string) => void;
   placeholder?: string;
   error?: string;
 }
 
 function CurrencyInput({ label, value, onChange, placeholder = '0', error }: CurrencyInputProps) {
-  // Format angka ke "150.000" untuk display
   const displayValue = value === '' ? '' : parseInt(value, 10).toLocaleString('id-ID');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const clean = parseCurrencyInput(e.target.value);
-    onChange(clean);
+    onChange(parseCurrencyInput(e.target.value));
   };
 
   const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault();
-    const pasted = e.clipboardData.getData('text');
-    const clean = parseCurrencyInput(pasted);
-    onChange(clean);
+    onChange(parseCurrencyInput(e.clipboardData.getData('text')));
   };
 
   return (
@@ -468,7 +450,7 @@ function CurrencyInput({ label, value, onChange, placeholder = '0', error }: Cur
 }
 
 // ─────────────────────────────────────────────
-// BulkStockSetter — isi stok semua size sekaligus dalam 1 variant
+// BulkStockSetter
 // ─────────────────────────────────────────────
 function BulkStockSetter({ onApply }: { onApply: (val: number) => void }) {
   const [bulkStock, setBulkStock] = useState('');
@@ -499,9 +481,7 @@ function BulkStockSetter({ onApply }: { onApply: (val: number) => void }) {
         onClick={handleApply}
         disabled={bulkStock === ''}
         className={`h-7 px-3 rounded-md text-xs font-semibold transition-all shrink-0 ${
-          applied
-            ? 'bg-green-500 text-white'
-            : 'bg-amber-500 hover:bg-amber-600 text-white disabled:opacity-40'
+          applied ? 'bg-green-500 text-white' : 'bg-amber-500 hover:bg-amber-600 text-white disabled:opacity-40'
         }`}
       >
         {applied ? '✓ Diterapkan' : 'Terapkan'}
@@ -511,7 +491,7 @@ function BulkStockSetter({ onApply }: { onApply: (val: number) => void }) {
 }
 
 // ─────────────────────────────────────────────
-// FIX 1: Unsaved changes guard hook
+// Unsaved changes guard hook
 // ─────────────────────────────────────────────
 function useUnsavedGuard(isDirty: boolean) {
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -541,15 +521,14 @@ function useUnsavedGuard(isDirty: boolean) {
 }
 
 // ─────────────────────────────────────────────
-// FIX 3: Draggable image list state helper
+// Draggable image type
 // ─────────────────────────────────────────────
 interface DraggableImage {
   type: 'existing' | 'new';
-  url: string;       // object URL untuk new, remote URL untuk existing
-  file?: File;       // hanya untuk type='new'
-  originalUrl?: string; // remote URL asli untuk existing
+  url: string;
+  file?: File;
+  originalUrl?: string;
 }
-
 
 interface FormModalProps {
   product: Product | null;
@@ -571,12 +550,10 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
   const [categoryId, setCategoryId] = useState(product?.category?._id || '');
   const [description, setDescription] = useState(product?.description || '');
 
-  // ── FIX 3: unified ordered image list ──────────────────────────────
   const [imageList, setImageList] = useState<DraggableImage[]>(() =>
     (product?.images || []).map((url) => ({ type: 'existing', url, originalUrl: url }))
   );
   const [removedImageIndexes, setRemovedImageIndexes] = useState<number[]>([]);
-
   const dragIndexRef = useRef<number | null>(null);
 
   const handleImageFiles = (files: File[]) => {
@@ -591,9 +568,7 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
   const handleRemoveImage = (idx: number) => {
     const item = imageList[idx];
     if (item.type === 'existing' && item.originalUrl) {
-      // Track index dalam array existing asli untuk dikirim ke API
-      const existingUrls = (product?.images || []);
-      const origIdx = existingUrls.indexOf(item.originalUrl);
+      const origIdx = (product?.images || []).indexOf(item.originalUrl);
       if (origIdx !== -1) {
         setRemovedImageIndexes((prev) => [...prev, origIdx]);
       }
@@ -603,10 +578,7 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
     setImageList((prev) => prev.filter((_, i) => i !== idx));
   };
 
-  // Drag-and-drop reorder handlers
-  const handleDragStart = (idx: number) => {
-    dragIndexRef.current = idx;
-  };
+  const handleDragStart = (idx: number) => { dragIndexRef.current = idx; };
 
   const handleDragOver = (e: React.DragEvent, idx: number) => {
     e.preventDefault();
@@ -621,10 +593,7 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
     dragIndexRef.current = idx;
   };
 
-  const handleDragEnd = () => {
-    dragIndexRef.current = null;
-  };
-  // ────────────────────────────────────────────────────────────────────
+  const handleDragEnd = () => { dragIndexRef.current = null; };
 
   const [newVideo, setNewVideo] = useState<File[]>([]);
   const [existingVideo, setExistingVideo] = useState<string | null>(product?.video || null);
@@ -635,11 +604,15 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
   const [price, setPrice] = useState(String(product?.price ?? ''));
   const [stock, setStock] = useState(String(product?.stock ?? ''));
   const [variants, setVariants] = useState<ProductVariant[]>(product?.variants || []);
+
+  useEffect(() => {
+  console.log('=== PRODUCT VARIANTS ===');
+  console.log(variants);
+}, [variants]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [openVariantIdx, setOpenVariantIdx] = useState<number | null>(null);
 
-  // ── FIX 1: dirty tracking ──────────────────────────────────────────
   const initialSnapshot = useRef({
     name: product?.name || '',
     categoryId: product?.category?._id || '',
@@ -668,14 +641,10 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
   })();
 
   const { confirmOpen, guardedClose, confirmLeave, cancelLeave } = useUnsavedGuard(isDirty);
-
-  const handleClose = () => {
-    guardedClose(onClose);
-  };
-  // ────────────────────────────────────────────────────────────────────
+  const handleClose = () => guardedClose(onClose);
 
   const addVariant = () => {
-    setVariants((prev) => [...prev, { name: '', sku: '', price: null, stock: null, sizes: [], isActive: true }]);
+    setVariants((prev) => [...prev, { name: '', sku: '', price: null, stock: null, sizes: [], isActive: true, image: '', imageKey: '' }]);
     setOpenVariantIdx(variants.length);
   };
 
@@ -738,7 +707,6 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
     }
 
     setSaving(true);
-
     try {
       if (product) {
         for (const index of removedImageIndexes.sort((a, b) => b - a)) {
@@ -749,7 +717,6 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
         }
       }
 
-      // Pisahkan kembali existing vs new dari imageList (sudah dalam urutan baru)
       const orderedExistingUrls = imageList
         .filter((img) => img.type === 'existing')
         .map((img) => img.originalUrl as string);
@@ -761,7 +728,7 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
       await onSave({
         name: name.trim(),
         description: description.trim(),
-        category: categories.find((c) => c._id === categoryId)?.name || '',
+        category: categoryId,
         isVariantMode,
         sku: sku.trim(),
         price,
@@ -781,10 +748,6 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
     }
   };
 
-  // ── FIX 1: Intercept backdrop click dari Modal via onClose prop ──────
-  // Modal harus meneruskan klik backdrop ke onClose, yang sudah kita wrap dengan guardedClose.
-  // Pastikan prop onClose di <Modal> mengarah ke handleClose (bukan onClose langsung).
-
   return (
     <>
       <Modal
@@ -797,7 +760,6 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
           <div className="flex items-center justify-between gap-2 w-full">
             <Button variant="outline" onClick={handleClose}>Batal</Button>
             <div className="flex items-center gap-2">
-              {/* Produk baru: Draft + Publish. Edit draft: Draft + Publish. Edit published: Arsipkan + Simpan */}
               {product && product.isActive ? (
                 <>
                   <Button
@@ -814,11 +776,7 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
                 </>
               ) : (
                 <>
-                  <Button
-                    variant="outline"
-                    onClick={() => handleSubmit(false)}
-                    disabled={saving}
-                  >
+                  <Button variant="outline" onClick={() => handleSubmit(false)} disabled={saving}>
                     {saving ? 'Menyimpan...' : 'Simpan Draft'}
                   </Button>
                   <Button onClick={() => handleSubmit(true)} disabled={saving}>
@@ -832,7 +790,6 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
       >
         <div className="space-y-6 pb-4">
 
-          {/* ── FIX 3: Drag-and-drop image list ───────────────────────────── */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -840,7 +797,6 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
                 <span className="ml-1 text-gray-400 font-normal">(drag untuk ubah urutan)</span>
               </label>
 
-              {/* Grid preview gambar yang bisa di-drag */}
               {imageList.length > 0 && (
                 <div className="grid grid-cols-4 gap-2 mb-3">
                   {imageList.map((img, idx) => {
@@ -857,14 +813,12 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
                       >
                         <img src={img.url} alt="" className="h-full w-full object-cover pointer-events-none" />
 
-                        {/* Thumbnail badge */}
                         {isThumbnail && (
                           <span className="absolute bottom-0 left-0 right-0 bg-brand-600/80 text-white text-[10px] text-center py-0.5 font-medium">
                             Thumbnail
                           </span>
                         )}
 
-                        {/* Set thumbnail (hanya untuk existing) */}
                         {img.type === 'existing' && !isThumbnail && product && (
                           <button
                             onClick={async () => {
@@ -877,7 +831,6 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
                           </button>
                         )}
 
-                        {/* Remove button */}
                         <button
                           onClick={() => handleRemoveImage(idx)}
                           className="absolute top-1 right-1 h-5 w-5 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold"
@@ -885,7 +838,6 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
                           ×
                         </button>
 
-                        {/* Order badge */}
                         <span className="absolute top-1 left-1 h-5 w-5 rounded-full bg-black/50 text-white text-[10px] flex items-center justify-center font-bold">
                           {idx + 1}
                         </span>
@@ -895,7 +847,6 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
                 </div>
               )}
 
-              {/* FileUpload hanya untuk trigger upload baru */}
               <FileUpload
                 type="image"
                 multiple
@@ -933,6 +884,7 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
               {errors.category && <p className="text-xs text-red-500 mt-1">{errors.category}</p>}
             </div>
           </div>
+
           <Textarea label="Deskripsi" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="Deskripsi produk..." />
 
           <div className="flex items-center justify-between rounded-xl border border-gray-200 dark:border-gray-700 p-4">
@@ -949,17 +901,10 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
             </button>
           </div>
 
-          {/* ── FIX 2: CurrencyInput untuk harga tanpa variant ───────────── */}
           {!isVariantMode && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <Input label="SKU Produk" value={sku} onChange={(e) => setSku(e.target.value)} placeholder="cth. AP-HP-001" error={errors.sku} />
-              <CurrencyInput
-                label="Harga (Rp)"
-                value={price}
-                onChange={setPrice}
-                placeholder="0"
-                error={errors.price}
-              />
+              <CurrencyInput label="Harga (Rp)" value={price} onChange={setPrice} placeholder="0" error={errors.price} />
               <Input label="Stok" type="number" value={stock} onChange={(e) => setStock(e.target.value)} placeholder="0" />
             </div>
           )}
@@ -1002,11 +947,118 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
 
                     {openVariantIdx === vIdx && (
                       <div className="p-4 space-y-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <Input label="Nama Variant" value={variant.name} onChange={(e) => updateVariant(vIdx, { name: e.target.value })} placeholder="cth. Hitam, Merah" error={errors[`variant-name-${vIdx}`]} />
-                          {!hasSize && (
-                            <Input label="SKU Variant" value={variant.sku} onChange={(e) => updateVariant(vIdx, { sku: e.target.value })} placeholder="cth. AP-HP-BLK" error={errors[`variant-sku-${vIdx}`]} />
-                          )}
+                        <div className="flex items-center gap-4">
+
+                          {/* Gambar Variant */}
+                          <div className="shrink-0">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                              Gambar
+                            </label>
+                            <div className="relative h-20 w-20 rounded-lg overflow-hidden border-2 border-dashed border-gray-200 dark:border-gray-700 group cursor-pointer">
+                              {!variant.image && (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 pointer-events-none">
+                                  <Package className="h-6 w-6 text-gray-300 dark:text-gray-600" />
+                                  <span className="text-[9px] text-gray-400 font-medium text-center leading-tight px-1">Gambar</span>
+                                </div>
+                              )}
+
+                              {variant.image && (
+  <img
+    src={(variant.image as any) instanceof File ? URL.createObjectURL(variant.image as any) : variant.image}
+    alt=""
+    className="h-full w-full object-cover"
+  />
+)}
+
+                              {variant.image && (
+                                <button
+                                  type="button"
+                                  onClick={async (e) => {
+                                    e.preventDefault();
+                                    if (product && variant._id) {
+                                      try {
+                                        await api.removeVariantImage(product._id, vIdx);
+                                        toast('Gambar dihapus', 'success');
+                                      } catch {
+                                        toast('Gagal menghapus gambar', 'error');
+                                      }
+                                    }
+                                    updateVariant(vIdx, { image: '', imageKey: '' });
+                                  }}
+                                  className="absolute top-1 right-1 h-5 w-5 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold z-10"
+                                >
+                                  ×
+                                </button>
+                              )}
+
+                              {/* ── FIXED: hanya satu handler upload, cek _id untuk bedakan persisted vs baru ── */}
+                              <label className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={async (e) => {
+                                    const file = e.target.files?.[0];
+                                    if (!file) return;
+
+                                    const isPersistedVariant = Boolean(product?._id);
+
+                                    console.log('CHECK VARIANT:', {
+                                      productId: product?._id,
+                                      variantId: variant._id,
+                                      isPersistedVariant,
+                                    });
+
+                                    if (isPersistedVariant && product) {
+                                      // Variant sudah tersimpan di DB → upload langsung
+                                      try {
+                                        const result = await api.setVariantImage(product._id, vIdx, file);
+                                        console.log('UPLOAD VARIANT RESULT:', result);
+                                        updateVariant(vIdx, {
+                                          image: result.variants[vIdx].image,
+                                          imageKey: result.variants[vIdx].imageKey,
+                                        });
+                                        toast('Gambar variant berhasil diupload', 'success');
+                                      } catch {
+                                        toast('Gagal upload gambar variant', 'error');
+                                      }
+                                    } else {
+                                      // Variant baru belum disave → simpan preview lokal dulu
+                                      updateVariant(vIdx, { image: file as any, imageKey: '' });
+                                      toast('Gambar akan diupload saat produk disimpan', 'info');
+                                    }
+
+                                    e.target.value = '';
+                                  }}
+                                />
+                                {variant.image ? (
+                                  <Edit className="h-4 w-4 text-white" />
+                                ) : (
+                                  <Plus className="h-4 w-4 text-white" />
+                                )}
+                              </label>
+                            </div>
+                          </div>
+
+                          {/* Fields variant */}
+                          <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <Input
+                              label="Nama Variant"
+                              value={variant.name}
+                              onChange={(e) => updateVariant(vIdx, { name: e.target.value })}
+                              placeholder="cth. Hitam, Merah"
+                              error={errors[`variant-name-${vIdx}`]}
+                            />
+                            {!hasSize && (
+                              <Input
+                                label="SKU Variant"
+                                value={variant.sku}
+                                onChange={(e) => updateVariant(vIdx, { sku: e.target.value })}
+                                placeholder="cth. AP-HP-BLK"
+                                error={errors[`variant-sku-${vIdx}`]}
+                              />
+                            )}
+                          </div>
                         </div>
 
                         <div className="flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-700 p-3">
@@ -1021,12 +1073,7 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
                                 vIdx,
                                 hasSize
                                   ? { sizes: [] }
-                                  : {
-                                      sku: '',
-                                      price: null,
-                                      stock: null,
-                                      sizes: [{ name: '', sku: '', price: 0, stock: 0, isActive: true }],
-                                    }
+                                  : { sku: '', price: null, stock: null, sizes: [{ name: '', sku: '', price: 0, stock: 0, isActive: true }] }
                               )
                             }
                             className={`relative h-6 w-11 rounded-full transition-colors overflow-hidden shrink-0 ${hasSize ? 'bg-brand-600' : 'bg-gray-200 dark:bg-gray-700'}`}
@@ -1035,7 +1082,6 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
                           </button>
                         </div>
 
-                        {/* ── FIX 2: CurrencyInput untuk harga variant ──── */}
                         {!hasSize && (
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <CurrencyInput
@@ -1045,7 +1091,13 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
                               placeholder="0"
                               error={errors[`variant-price-${vIdx}`]}
                             />
-                            <Input label="Stok Variant" type="number" value={String(variant.stock ?? '')} onChange={(e) => updateVariant(vIdx, { stock: parseInt(e.target.value, 10) || 0 })} placeholder="0" />
+                            <Input
+                              label="Stok Variant"
+                              type="number"
+                              value={String(variant.stock ?? '')}
+                              onChange={(e) => updateVariant(vIdx, { stock: parseInt(e.target.value, 10) || 0 })}
+                              placeholder="0"
+                            />
                           </div>
                         )}
 
@@ -1056,14 +1108,11 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
                               <Button size="sm" variant="outline" onClick={() => addSize(vIdx)}><Plus className="h-3.5 w-3.5" /> Tambah Size</Button>
                             </div>
 
-                            {/* Bulk stock setter */}
                             <BulkStockSetter
                               onApply={(val) => {
                                 setVariants((prev) =>
                                   prev.map((v, i) =>
-                                    i === vIdx
-                                      ? { ...v, sizes: v.sizes.map((s) => ({ ...s, stock: val })) }
-                                      : v
+                                    i === vIdx ? { ...v, sizes: v.sizes.map((s) => ({ ...s, stock: val })) } : v
                                   )
                                 );
                               }}
@@ -1081,7 +1130,6 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
                                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                                   <Input label="Ukuran" value={size.name} onChange={(e) => updateSize(vIdx, sIdx, { name: e.target.value })} placeholder="cth. S, M, L, XL" error={errors[`size-name-${vIdx}-${sIdx}`]} />
                                   <Input label="SKU" value={size.sku} onChange={(e) => updateSize(vIdx, sIdx, { sku: e.target.value })} placeholder="cth. AP-HP-BLK-S" error={errors[`size-sku-${vIdx}-${sIdx}`]} />
-                                  {/* ── FIX 2: CurrencyInput untuk harga size ── */}
                                   <CurrencyInput
                                     label="Harga (Rp)"
                                     value={String(size.price || '')}
@@ -1105,7 +1153,6 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
         </div>
       </Modal>
 
-      {/* ── FIX 1: Unsaved changes confirmation modal ─────────────────── */}
       <Modal
         open={confirmOpen}
         onClose={cancelLeave}

@@ -274,12 +274,15 @@ export interface ProductSize {
 }
 
 export interface ProductVariant {
+  _id?: string;      // TAMBAH — ada kalau sudah tersimpan di DB, undefined kalau baru
   name: string;
   sku: string;
   price: number | null;
   stock: number | null;
   sizes: ProductSize[];
   isActive: boolean;
+  image: string;
+  imageKey: string;
 }
 
 export interface Product {
