@@ -978,14 +978,14 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
                                   type="button"
                                   onClick={async (e) => {
                                     e.preventDefault();
-                                    if (product && variant._id) {
-                                      try {
-                                        await api.removeVariantImage(product._id, vIdx);
-                                        toast('Gambar dihapus', 'success');
-                                      } catch {
-                                        toast('Gagal menghapus gambar', 'error');
-                                      }
-                                    }
+                                    if (product) {
+  try {
+    await api.removeVariantImage(product._id, vIdx);
+    toast('Gambar dihapus', 'success');
+  } catch {
+    toast('Gagal menghapus gambar', 'error');
+  }
+}
                                     updateVariant(vIdx, { image: '', imageKey: '' });
                                   }}
                                   className="absolute top-1 right-1 h-5 w-5 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold z-10"
