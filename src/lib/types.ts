@@ -323,6 +323,9 @@ export interface ProductQueryParams {
   sort?: string;
 }
 
+// PATCH untuk types.ts
+// Ganti interface ProductFormPayload dengan yang ini:
+
 export interface ProductFormPayload {
   name: string;
   description: string;
@@ -338,6 +341,7 @@ export interface ProductFormPayload {
   isActive: boolean;
 
   images: File[];
+  imageOrder?: string[]; // <-- TAMBAHAN: urutan existing images setelah drag-drop
   video: File | null;
 }
 
@@ -383,6 +387,10 @@ export interface Order {
   status: OrderStatus;
   paymentStatus: PaymentStatus;
   shippingStatus: ShippingStatus;
+  shippingCostStatus: 'pending_ongkir' | 'settled' | null;
+  isCOD: boolean;
+  checkoutToken: string | null;
+  checkoutTokenExpiry: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -398,6 +406,7 @@ export interface OrderQueryParams {
   search?: string;
   status?: OrderStatus;
   sort?: string;
+  shippingCostStatus?: 'pending_ongkir' | 'settled';
 }
 
 // ---- Belum disambungkan ke backend (masih placeholder lama) ----

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import {
   Plus, Search, ChevronLeft, ChevronRight, Package, Edit, Trash2,
   ChevronDown, ChevronRight as ChevronR, Save,
@@ -26,6 +26,7 @@ export function ProductsPage() {
   const [totalItems, setTotalItems] = useState(0);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'draft'>('all');
   const [page, setPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -40,18 +41,23 @@ export function ProductsPage() {
     setLoading(true);
     try {
       const [prodResult, catResult] = await Promise.all([
-  api.getProducts({ page, limit: PAGE_SIZE, search: search || undefined }),
-  api.getCategories({ limit: 100 }),
-]);
-setProducts(prodResult.items);
-setTotalItems(prodResult.pagination.totalItems);
-setCategories(catResult.items);
-      setSelectedIds([]); // reset seleksi tiap kali data reload
+        api.getProducts({
+          page,
+          limit: PAGE_SIZE,
+          search: search || undefined,
+          isActive: statusFilter === 'all' ? undefined : statusFilter === 'active',
+        }),
+        api.getCategories({ limit: 100 }),
+      ]);
+      setProducts(prodResult.items);
+      setTotalItems(prodResult.pagination.totalItems);
+      setCategories(catResult.items);
+      setSelectedIds([]);
     } catch (err) {
       toast(err instanceof Error ? err.message : 'Gagal memuat produk', 'error');
     }
     setLoading(false);
-  }, [page, search, toast]);
+  }, [page, search, statusFilter, toast]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -65,8 +71,9 @@ setCategories(catResult.items);
     name: string; description: string; category: string;
     isVariantMode: boolean; sku: string; price: string; stock: string;
     variants: ProductVariant[];
-    newImages: File[]; existingImages: string[];
+    newImages: File[]; existingImages: string[]; imageOrder: string[];
     newVideo: File | null; removeVideo: boolean;
+    isActive: boolean;
   }) => {
     try {
       const payload = {
@@ -77,17 +84,23 @@ setCategories(catResult.items);
         price: formPayload.isVariantMode ? null : (parseFloat(formPayload.price) || 0),
         stock: formPayload.isVariantMode ? null : (parseInt(formPayload.stock, 10) || 0),
         variants: formPayload.isVariantMode ? formPayload.variants : [],
-        isActive: true,
+        isActive: formPayload.isActive,
         images: formPayload.newImages,
         video: formPayload.newVideo,
       };
 
       if (editingProduct) {
         await api.updateProduct(editingProduct._id, payload);
-        toast('Produk berhasil diperbarui', 'success');
+
+        // Reorder existing images via dedicated endpoint kalau ada urutan baru
+        if (formPayload.imageOrder.length > 0) {
+          await api.reorderProductImages(editingProduct._id, formPayload.imageOrder);
+        }
+
+        toast(formPayload.isActive ? 'Produk berhasil dipublish' : 'Produk disimpan sebagai draft', 'success');
       } else {
         await api.createProduct(payload);
-        toast('Produk berhasil dibuat', 'success');
+        toast(formPayload.isActive ? 'Produk berhasil dipublish' : 'Produk disimpan sebagai draft', 'success');
       }
       setModalOpen(false);
       setEditingProduct(null);
@@ -109,7 +122,6 @@ setCategories(catResult.items);
     }
   };
 
-  // --- Bulk delete handlers ---
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
@@ -157,6 +169,11 @@ setCategories(catResult.items);
             <option value="all">Semua Kategori</option>
             {categories.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
           </Select>
+          <Select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value as 'all' | 'active' | 'draft'); setPage(1); }} className="w-auto whitespace-nowrap">
+            <option value="all">Semua Status</option>
+            <option value="active">Aktif</option>
+            <option value="draft">Draft</option>
+          </Select>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
           {selectedIds.length > 0 && (
@@ -198,12 +215,12 @@ setCategories(catResult.items);
                         className="rounded border-gray-300"
                       />
                     </th>
-                    <th className="text-left text-xs font-medium text-gray-500 px-4 py-3">Produk</th>
-                    <th className="text-left text-xs font-medium text-gray-500 px-4 py-3 hidden lg:table-cell">Kategori</th>
-                    <th className="text-left text-xs font-medium text-gray-500 px-4 py-3 hidden lg:table-cell">Range Harga</th>
-                    <th className="text-left text-xs font-medium text-gray-500 px-4 py-3">Total Stok</th>
-                    <th className="text-left text-xs font-medium text-gray-500 px-4 py-3 hidden sm:table-cell">Dibuat</th>
-                    <th className="px-4 py-3 w-20 text-white">Aksi</th>
+                    <th className="text-left text-xs font-medium text-gray-500 px-4 py-3 w-[35%]">Produk</th>
+                    <th className="text-left text-xs font-medium text-gray-500 px-4 py-3 hidden lg:table-cell w-28">Kategori</th>
+                    <th className="text-left text-xs font-medium text-gray-500 px-4 py-3 hidden lg:table-cell w-44">Range Harga</th>
+                    <th className="text-left text-xs font-medium text-gray-500 px-4 py-3 w-24">Total Stok</th>
+                    <th className="text-left text-xs font-medium text-gray-500 px-4 py-3 hidden sm:table-cell w-28">Dibuat</th>
+                    <th className="text-left text-xs font-medium text-gray-500 px-4 py-3 hidden sm:table-cell w-28">Edit</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -222,7 +239,7 @@ setCategories(catResult.items);
                             className="rounded border-gray-300"
                           />
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3 max-w-0">
                           <div className="flex items-center gap-3">
                             <div className="h-10 w-10 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 shrink-0">
                               {product.thumbnail ? (
@@ -231,21 +248,28 @@ setCategories(catResult.items);
                                 <div className="h-full w-full flex items-center justify-center text-gray-400"><Package className="h-5 w-5" /></div>
                               )}
                             </div>
-                            <div className="min-w-0">
-                              <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{product.name}</p>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate" title={product.name}>{product.name}</p>
+                                {!product.isActive && (
+                                  <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                                    Draft
+                                  </span>
+                                )}
+                              </div>
                               <p className="text-xs text-gray-400">{hasVariant ? `${product.variants.length} variant` : 'Tanpa variant'}</p>
                             </div>
                           </div>
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300 hidden lg:table-cell">{product.category?.name || '-'}</td>
-                        <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300 hidden lg:table-cell">{priceRange}</td>
+                        <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300 hidden lg:table-cell whitespace-nowrap">{priceRange}</td>
                         <td className="px-4 py-3">
                           <span className={`text-sm font-medium ${product.totalStock === 0 ? 'text-red-500' : product.totalStock <= 10 ? 'text-amber-500' : 'text-gray-700 dark:text-gray-300'}`}>
                             {formatNumber(product.totalStock)}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-500 hidden sm:table-cell">{formatDate(product.createdAt)}</td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3 w-20 shrink-0">
                           <div className="flex items-center gap-1">
                             <button onClick={() => { setEditingProduct(product); setModalOpen(true); }} className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-brand-600 transition-colors">
                               <Edit className="h-4 w-4" />
@@ -282,7 +306,14 @@ setCategories(catResult.items);
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{product.name}</p>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{product.name}</p>
+                          {!product.isActive && (
+                            <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                              Draft
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-gray-400">{product.category?.name || '-'} - {hasVariant ? `${product.variants.length} variant` : 'Tanpa variant'}</p>
                       </div>
                     </div>
@@ -373,6 +404,153 @@ setCategories(catResult.items);
   );
 }
 
+// ─────────────────────────────────────────────
+// FIX 2: Currency input helper
+// Strips semua non-digit lalu return angka bersih (string)
+// ─────────────────────────────────────────────
+function parseCurrencyInput(raw: string): string {
+  // Hapus semua karakter selain digit
+  const digits = raw.replace(/[^\d]/g, '');
+  return digits === '' ? '' : String(parseInt(digits, 10));
+}
+
+// ─────────────────────────────────────────────
+// FIX 2: Komponen CurrencyInput
+// Tampilkan formatted (1.000.000) tapi simpan nilai bersih
+// ─────────────────────────────────────────────
+interface CurrencyInputProps {
+  label: string;
+  value: string; // nilai angka bersih, e.g. "150000"
+  onChange: (cleanValue: string) => void;
+  placeholder?: string;
+  error?: string;
+}
+
+function CurrencyInput({ label, value, onChange, placeholder = '0', error }: CurrencyInputProps) {
+  // Format angka ke "150.000" untuk display
+  const displayValue = value === '' ? '' : parseInt(value, 10).toLocaleString('id-ID');
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const clean = parseCurrencyInput(e.target.value);
+    onChange(clean);
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData('text');
+    const clean = parseCurrencyInput(pasted);
+    onChange(clean);
+  };
+
+  return (
+    <div>
+      {label && (
+        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+          {label}
+        </label>
+      )}
+      <input
+        type="text"
+        inputMode="numeric"
+        value={displayValue}
+        onChange={handleChange}
+        onPaste={handlePaste}
+        placeholder={placeholder}
+        className={`w-full h-10 rounded-lg border px-3 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all ${
+          error
+            ? 'border-red-400 focus:border-red-400 focus:ring-red-400/20'
+            : 'border-gray-200 dark:border-gray-700'
+        }`}
+      />
+      {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// BulkStockSetter — isi stok semua size sekaligus dalam 1 variant
+// ─────────────────────────────────────────────
+function BulkStockSetter({ onApply }: { onApply: (val: number) => void }) {
+  const [bulkStock, setBulkStock] = useState('');
+  const [applied, setApplied] = useState(false);
+
+  const handleApply = () => {
+    const val = parseInt(bulkStock, 10);
+    if (isNaN(val) || val < 0) return;
+    onApply(val);
+    setApplied(true);
+    setTimeout(() => setApplied(false), 1500);
+  };
+
+  return (
+    <div className="flex items-center gap-2 rounded-lg bg-amber-50 dark:bg-amber-900/15 border border-amber-200 dark:border-amber-700/40 px-3 py-2">
+      <span className="text-xs text-amber-700 dark:text-amber-400 font-medium shrink-0">Set semua stok:</span>
+      <input
+        type="number"
+        min={0}
+        value={bulkStock}
+        onChange={(e) => { setBulkStock(e.target.value); setApplied(false); }}
+        onKeyDown={(e) => e.key === 'Enter' && handleApply()}
+        placeholder="0"
+        className="w-20 h-7 rounded-md border border-amber-300 dark:border-amber-600 bg-white dark:bg-gray-900 px-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-400/30 focus:border-amber-400"
+      />
+      <button
+        type="button"
+        onClick={handleApply}
+        disabled={bulkStock === ''}
+        className={`h-7 px-3 rounded-md text-xs font-semibold transition-all shrink-0 ${
+          applied
+            ? 'bg-green-500 text-white'
+            : 'bg-amber-500 hover:bg-amber-600 text-white disabled:opacity-40'
+        }`}
+      >
+        {applied ? '✓ Diterapkan' : 'Terapkan'}
+      </button>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// FIX 1: Unsaved changes guard hook
+// ─────────────────────────────────────────────
+function useUnsavedGuard(isDirty: boolean) {
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const pendingCallback = useRef<(() => void) | null>(null);
+
+  const guardedClose = useCallback((onConfirm: () => void) => {
+    if (isDirty) {
+      pendingCallback.current = onConfirm;
+      setConfirmOpen(true);
+    } else {
+      onConfirm();
+    }
+  }, [isDirty]);
+
+  const confirmLeave = () => {
+    setConfirmOpen(false);
+    pendingCallback.current?.();
+    pendingCallback.current = null;
+  };
+
+  const cancelLeave = () => {
+    setConfirmOpen(false);
+    pendingCallback.current = null;
+  };
+
+  return { confirmOpen, guardedClose, confirmLeave, cancelLeave };
+}
+
+// ─────────────────────────────────────────────
+// FIX 3: Draggable image list state helper
+// ─────────────────────────────────────────────
+interface DraggableImage {
+  type: 'existing' | 'new';
+  url: string;       // object URL untuk new, remote URL untuk existing
+  file?: File;       // hanya untuk type='new'
+  originalUrl?: string; // remote URL asli untuk existing
+}
+
+
 interface FormModalProps {
   product: Product | null;
   categories: Category[];
@@ -381,8 +559,9 @@ interface FormModalProps {
     name: string; description: string; category: string;
     isVariantMode: boolean; sku: string; price: string; stock: string;
     variants: ProductVariant[];
-    newImages: File[]; existingImages: string[];
+    newImages: File[]; existingImages: string[]; imageOrder: string[];
     newVideo: File | null; removeVideo: boolean;
+    isActive: boolean;
   }) => void;
 }
 
@@ -392,13 +571,65 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
   const [categoryId, setCategoryId] = useState(product?.category?._id || '');
   const [description, setDescription] = useState(product?.description || '');
 
-  const [existingImages, setExistingImages] = useState<string[]>(product?.images || []);
+  // ── FIX 3: unified ordered image list ──────────────────────────────
+  const [imageList, setImageList] = useState<DraggableImage[]>(() =>
+    (product?.images || []).map((url) => ({ type: 'existing', url, originalUrl: url }))
+  );
   const [removedImageIndexes, setRemovedImageIndexes] = useState<number[]>([]);
-  const [newImages, setNewImages] = useState<File[]>([]);
+
+  const dragIndexRef = useRef<number | null>(null);
+
+  const handleImageFiles = (files: File[]) => {
+    const newEntries: DraggableImage[] = files.map((file) => ({
+      type: 'new',
+      url: URL.createObjectURL(file),
+      file,
+    }));
+    setImageList((prev) => [...prev, ...newEntries]);
+  };
+
+  const handleRemoveImage = (idx: number) => {
+    const item = imageList[idx];
+    if (item.type === 'existing' && item.originalUrl) {
+      // Track index dalam array existing asli untuk dikirim ke API
+      const existingUrls = (product?.images || []);
+      const origIdx = existingUrls.indexOf(item.originalUrl);
+      if (origIdx !== -1) {
+        setRemovedImageIndexes((prev) => [...prev, origIdx]);
+      }
+    } else if (item.type === 'new' && item.url) {
+      URL.revokeObjectURL(item.url);
+    }
+    setImageList((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  // Drag-and-drop reorder handlers
+  const handleDragStart = (idx: number) => {
+    dragIndexRef.current = idx;
+  };
+
+  const handleDragOver = (e: React.DragEvent, idx: number) => {
+    e.preventDefault();
+    const from = dragIndexRef.current;
+    if (from === null || from === idx) return;
+    setImageList((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(from, 1);
+      next.splice(idx, 0, moved);
+      return next;
+    });
+    dragIndexRef.current = idx;
+  };
+
+  const handleDragEnd = () => {
+    dragIndexRef.current = null;
+  };
+  // ────────────────────────────────────────────────────────────────────
+
   const [newVideo, setNewVideo] = useState<File[]>([]);
   const [existingVideo, setExistingVideo] = useState<string | null>(product?.video || null);
   const [removeVideo, setRemoveVideo] = useState(false);
-  const [thumbnail, setThumbnail] = useState(product?.thumbnail || "");
+  const [thumbnail, setThumbnail] = useState(product?.thumbnail || '');
   const [isVariantMode, setIsVariantMode] = useState((product?.variants?.length ?? 0) > 0);
   const [sku, setSku] = useState(product?.sku || '');
   const [price, setPrice] = useState(String(product?.price ?? ''));
@@ -407,6 +638,41 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [openVariantIdx, setOpenVariantIdx] = useState<number | null>(null);
+
+  // ── FIX 1: dirty tracking ──────────────────────────────────────────
+  const initialSnapshot = useRef({
+    name: product?.name || '',
+    categoryId: product?.category?._id || '',
+    description: product?.description || '',
+    price: String(product?.price ?? ''),
+    stock: String(product?.stock ?? ''),
+    sku: product?.sku || '',
+    imageListLength: (product?.images || []).length,
+    variantsJson: JSON.stringify(product?.variants || []),
+  });
+
+  const isDirty = (() => {
+    const s = initialSnapshot.current;
+    return (
+      name !== s.name ||
+      categoryId !== s.categoryId ||
+      description !== s.description ||
+      price !== s.price ||
+      stock !== s.stock ||
+      sku !== s.sku ||
+      imageList.length !== s.imageListLength ||
+      JSON.stringify(variants) !== s.variantsJson ||
+      newVideo.length > 0 ||
+      removeVideo
+    );
+  })();
+
+  const { confirmOpen, guardedClose, confirmLeave, cancelLeave } = useUnsavedGuard(isDirty);
+
+  const handleClose = () => {
+    guardedClose(onClose);
+  };
+  // ────────────────────────────────────────────────────────────────────
 
   const addVariant = () => {
     setVariants((prev) => [...prev, { name: '', sku: '', price: null, stock: null, sizes: [], isActive: true }]);
@@ -465,262 +731,397 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = async () => {
-  if (!validate()) {
-    toast('Periksa kembali data yang diisi', 'error');
-    return;
-  }
-
-  setSaving(true);
-
-  try {
-    if (product) {
-      // Hapus gambar yang di-X
-      for (const index of removedImageIndexes.sort((a, b) => b - a)) {
-        await api.removeProductImage(product._id, index);
-      }
-
-      // Hapus video HANYA jika user benar-benar menekan tombol X
-      if (removeVideo) {
-        await api.removeProductVideo(product._id);
-      }
+  const handleSubmit = async (submitAsActive: boolean) => {
+    if (!validate()) {
+      toast('Periksa kembali data yang diisi', 'error');
+      return;
     }
 
-    await onSave({
-      name: name.trim(),
-      description: description.trim(),
-      category: categories.find((c) => c._id === categoryId)?.name || '',
-      isVariantMode,
-      sku: sku.trim(),
-      price,
-      stock,
-      variants,
-      newImages,
-      existingImages,
-      newVideo: newVideo[0] || null,
-      removeVideo,
-    });
+    setSaving(true);
 
-    setRemoveVideo(false);
-  } finally {
-    setSaving(false);
-  }
-};
+    try {
+      if (product) {
+        for (const index of removedImageIndexes.sort((a, b) => b - a)) {
+          await api.removeProductImage(product._id, index);
+        }
+        if (removeVideo) {
+          await api.removeProductVideo(product._id);
+        }
+      }
+
+      // Pisahkan kembali existing vs new dari imageList (sudah dalam urutan baru)
+      const orderedExistingUrls = imageList
+        .filter((img) => img.type === 'existing')
+        .map((img) => img.originalUrl as string);
+
+      const orderedNewFiles = imageList
+        .filter((img) => img.type === 'new')
+        .map((img) => img.file as File);
+
+      await onSave({
+        name: name.trim(),
+        description: description.trim(),
+        category: categories.find((c) => c._id === categoryId)?.name || '',
+        isVariantMode,
+        sku: sku.trim(),
+        price,
+        stock,
+        variants,
+        newImages: orderedNewFiles,
+        existingImages: orderedExistingUrls,
+        imageOrder: orderedExistingUrls,
+        newVideo: newVideo[0] || null,
+        removeVideo,
+        isActive: submitAsActive,
+      });
+
+      setRemoveVideo(false);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // ── FIX 1: Intercept backdrop click dari Modal via onClose prop ──────
+  // Modal harus meneruskan klik backdrop ke onClose, yang sudah kita wrap dengan guardedClose.
+  // Pastikan prop onClose di <Modal> mengarah ke handleClose (bukan onClose langsung).
 
   return (
-    <Modal
-      open
-      onClose={onClose}
-      title={product ? 'Edit Produk' : 'Tambah Produk'}
-      subtitle={product ? product.name : 'Buat produk baru dalam katalog'}
-      size="xl"
-      footer={
-        <div className="flex items-center justify-end gap-2 w-full">
-          <Button variant="outline" onClick={onClose}>Batal</Button>
-          <Button onClick={handleSubmit} disabled={saving}>
-            {saving ? 'Menyimpan...' : <><Save className="h-4 w-4" /> Simpan Produk</>}
-          </Button>
-        </div>
-      }
-    >
-      <div className="space-y-6 pb-4">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <FileUpload
-          type="image"
-          multiple
-          maxFiles={10}
-          label="Gambar Produk"
-          files={newImages}
-          onFilesChange={setNewImages}
-          existing={existingImages}
-          thumbnail={thumbnail}
-          onSetThumbnail={async (url: string) => {
-            if (!product) return;
-
-            await api.setProductThumbnail(product._id, url);
-            setThumbnail(url);
-          }}
-          onRemoveExisting={(url) => {
-            const index = existingImages.indexOf(url);
-
-            if (index !== -1) {
-              setRemovedImageIndexes(prev => [...prev, index]);
-            }
-
-            setExistingImages(prev => prev.filter(u => u !== url));
-          }}
-        />
-          <FileUpload
-            type="video"
-            label="Video Produk (opsional)"
-            files={newVideo}
-            onFilesChange={setNewVideo}
-            existing={existingVideo ? [existingVideo] : []}
-            onRemoveExisting={() => {
-              setExistingVideo(null);
-              setRemoveVideo(true);
-            }}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Input label="Nama Produk" value={name} onChange={(e) => setName(e.target.value)} placeholder="cth. Headphone Wireless" error={errors.name} />
-          <div>
-            <Select label="Kategori" value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-              <option value="">Pilih kategori</option>
-              {categories.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
-            </Select>
-            {errors.category && <p className="text-xs text-red-500 mt-1">{errors.category}</p>}
+    <>
+      <Modal
+        open
+        onClose={handleClose}
+        title={product ? 'Edit Produk' : 'Tambah Produk'}
+        subtitle={product ? product.name : 'Buat produk baru dalam katalog'}
+        size="xl"
+        footer={
+          <div className="flex items-center justify-between gap-2 w-full">
+            <Button variant="outline" onClick={handleClose}>Batal</Button>
+            <div className="flex items-center gap-2">
+              {/* Produk baru: Draft + Publish. Edit draft: Draft + Publish. Edit published: Arsipkan + Simpan */}
+              {product && product.isActive ? (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => handleSubmit(false)}
+                    disabled={saving}
+                    className="text-amber-600 border-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/20"
+                  >
+                    Arsipkan ke Draft
+                  </Button>
+                  <Button onClick={() => handleSubmit(true)} disabled={saving}>
+                    {saving ? 'Menyimpan...' : <><Save className="h-4 w-4" /> Simpan</>}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => handleSubmit(false)}
+                    disabled={saving}
+                  >
+                    {saving ? 'Menyimpan...' : 'Simpan Draft'}
+                  </Button>
+                  <Button onClick={() => handleSubmit(true)} disabled={saving}>
+                    {saving ? 'Menyimpan...' : <><Save className="h-4 w-4" /> Publish</>}
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
-        </div>
-        <Textarea label="Deskripsi" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="Deskripsi produk..." />
+        }
+      >
+        <div className="space-y-6 pb-4">
 
-        <div className="flex items-center justify-between rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-          <div>
-            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Produk Memiliki Variant</p>
-            <p className="text-xs text-gray-500 mt-0.5">Aktifkan jika produk memiliki varian seperti warna/ukuran</p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setIsVariantMode(!isVariantMode)}
-            className={`relative h-6 w-11 rounded-full transition-colors overflow-hidden ${isVariantMode ? 'bg-brand-600' : 'bg-gray-200 dark:bg-gray-700'}`}
-          >
-            <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${isVariantMode ? 'translate-x-5' : 'translate-x-0'}`} />
-          </button>
-        </div>
+          {/* ── FIX 3: Drag-and-drop image list ───────────────────────────── */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Gambar Produk
+                <span className="ml-1 text-gray-400 font-normal">(drag untuk ubah urutan)</span>
+              </label>
 
-        {!isVariantMode && (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Input label="SKU Produk" value={sku} onChange={(e) => setSku(e.target.value)} placeholder="cth. AP-HP-001" error={errors.sku} />
-            <Input label="Harga (Rp)" type="number" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0" error={errors.price} />
-            <Input label="Stok" type="number" value={stock} onChange={(e) => setStock(e.target.value)} placeholder="0" />
-          </div>
-        )}
+              {/* Grid preview gambar yang bisa di-drag */}
+              {imageList.length > 0 && (
+                <div className="grid grid-cols-4 gap-2 mb-3">
+                  {imageList.map((img, idx) => {
+                    const isThumbnail = img.type === 'existing' && img.originalUrl === thumbnail;
+                    return (
+                      <div
+                        key={img.url}
+                        draggable
+                        onDragStart={() => handleDragStart(idx)}
+                        onDragOver={(e) => handleDragOver(e, idx)}
+                        onDragEnd={handleDragEnd}
+                        className="relative group aspect-square rounded-lg overflow-hidden border-2 border-transparent hover:border-brand-400 cursor-grab active:cursor-grabbing transition-all select-none"
+                        style={{ boxShadow: isThumbnail ? '0 0 0 2px #6366f1' : undefined }}
+                      >
+                        <img src={img.url} alt="" className="h-full w-full object-cover pointer-events-none" />
 
-        {isVariantMode && (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Variant Produk</h4>
-              <Button size="sm" variant="outline" onClick={addVariant}><Plus className="h-4 w-4" /> Tambah Variant</Button>
+                        {/* Thumbnail badge */}
+                        {isThumbnail && (
+                          <span className="absolute bottom-0 left-0 right-0 bg-brand-600/80 text-white text-[10px] text-center py-0.5 font-medium">
+                            Thumbnail
+                          </span>
+                        )}
+
+                        {/* Set thumbnail (hanya untuk existing) */}
+                        {img.type === 'existing' && !isThumbnail && product && (
+                          <button
+                            onClick={async () => {
+                              await api.setProductThumbnail(product._id, img.originalUrl!);
+                              setThumbnail(img.originalUrl!);
+                            }}
+                            className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] text-center py-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            Set thumbnail
+                          </button>
+                        )}
+
+                        {/* Remove button */}
+                        <button
+                          onClick={() => handleRemoveImage(idx)}
+                          className="absolute top-1 right-1 h-5 w-5 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold"
+                        >
+                          ×
+                        </button>
+
+                        {/* Order badge */}
+                        <span className="absolute top-1 left-1 h-5 w-5 rounded-full bg-black/50 text-white text-[10px] flex items-center justify-center font-bold">
+                          {idx + 1}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* FileUpload hanya untuk trigger upload baru */}
+              <FileUpload
+                type="image"
+                multiple
+                maxFiles={10 - imageList.length}
+                label=""
+                files={[]}
+                onFilesChange={handleImageFiles}
+                existing={[]}
+                thumbnail={undefined}
+                onSetThumbnail={() => {}}
+                onRemoveExisting={() => {}}
+              />
             </div>
 
-            {variants.length === 0 && (
-              <div className="rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 p-8 text-center">
-                <Package className="h-8 w-8 text-gray-300 mx-auto mb-2" />
-                <p className="text-sm text-gray-400">Belum ada variant. Klik "Tambah Variant" untuk memulai.</p>
+            <FileUpload
+              type="video"
+              label="Video Produk (opsional)"
+              files={newVideo}
+              onFilesChange={setNewVideo}
+              existing={existingVideo ? [existingVideo] : []}
+              onRemoveExisting={() => {
+                setExistingVideo(null);
+                setRemoveVideo(true);
+              }}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input label="Nama Produk" value={name} onChange={(e) => setName(e.target.value)} placeholder="cth. Headphone Wireless" error={errors.name} />
+            <div>
+              <Select label="Kategori" value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+                <option value="">Pilih kategori</option>
+                {categories.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
+              </Select>
+              {errors.category && <p className="text-xs text-red-500 mt-1">{errors.category}</p>}
+            </div>
+          </div>
+          <Textarea label="Deskripsi" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="Deskripsi produk..." />
+
+          <div className="flex items-center justify-between rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+            <div>
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Produk Memiliki Variant</p>
+              <p className="text-xs text-gray-500 mt-0.5">Aktifkan jika produk memiliki varian seperti warna/ukuran</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsVariantMode(!isVariantMode)}
+              className={`relative h-6 w-11 rounded-full transition-colors overflow-hidden ${isVariantMode ? 'bg-brand-600' : 'bg-gray-200 dark:bg-gray-700'}`}
+            >
+              <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${isVariantMode ? 'translate-x-5' : 'translate-x-0'}`} />
+            </button>
+          </div>
+
+          {/* ── FIX 2: CurrencyInput untuk harga tanpa variant ───────────── */}
+          {!isVariantMode && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Input label="SKU Produk" value={sku} onChange={(e) => setSku(e.target.value)} placeholder="cth. AP-HP-001" error={errors.sku} />
+              <CurrencyInput
+                label="Harga (Rp)"
+                value={price}
+                onChange={setPrice}
+                placeholder="0"
+                error={errors.price}
+              />
+              <Input label="Stok" type="number" value={stock} onChange={(e) => setStock(e.target.value)} placeholder="0" />
+            </div>
+          )}
+
+          {isVariantMode && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Variant Produk</h4>
+                <Button size="sm" variant="outline" onClick={addVariant}><Plus className="h-4 w-4" /> Tambah Variant</Button>
               </div>
-            )}
 
-            {variants.map((variant, vIdx) => {
-              if (!variant.sizes) {
-                variant.sizes = [];
-              }
-              const hasSize = variant.sizes.length > 0;
-              
-              return (
-                <div key={vIdx} className="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-                  <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 dark:bg-gray-800/50">
-                    <button onClick={() => setOpenVariantIdx(openVariantIdx === vIdx ? null : vIdx)} className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                      {openVariantIdx === vIdx ? <ChevronDown className="h-4 w-4" /> : <ChevronR className="h-4 w-4" />}
-                    </button>
-                    <span className="text-xs font-bold text-gray-400">V{vIdx + 1}</span>
-                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100 flex-1 truncate">{variant.name || 'Variant tanpa nama'}</span>
-                    {hasSize ? (
-                      <Badge color="blue">{variant.sizes.length} size</Badge>
-                    ) : (
-                      variant.price != null && <span className="text-xs text-gray-500">{formatCurrency(variant.price)}</span>
-                    )}
-                    <button onClick={() => removeVariant(vIdx)} className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
+              {variants.length === 0 && (
+                <div className="rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 p-8 text-center">
+                  <Package className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+                  <p className="text-sm text-gray-400">Belum ada variant. Klik "Tambah Variant" untuk memulai.</p>
+                </div>
+              )}
 
-                  {openVariantIdx === vIdx && (
-                    <div className="p-4 space-y-4">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <Input label="Nama Variant" value={variant.name} onChange={(e) => updateVariant(vIdx, { name: e.target.value })} placeholder="cth. Hitam, Merah" error={errors[`variant-name-${vIdx}`]} />
+              {variants.map((variant, vIdx) => {
+                if (!variant.sizes) variant.sizes = [];
+                const hasSize = variant.sizes.length > 0;
+
+                return (
+                  <div key={vIdx} className="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 dark:bg-gray-800/50">
+                      <button onClick={() => setOpenVariantIdx(openVariantIdx === vIdx ? null : vIdx)} className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                        {openVariantIdx === vIdx ? <ChevronDown className="h-4 w-4" /> : <ChevronR className="h-4 w-4" />}
+                      </button>
+                      <span className="text-xs font-bold text-gray-400">V{vIdx + 1}</span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100 flex-1 truncate">{variant.name || 'Variant tanpa nama'}</span>
+                      {hasSize ? (
+                        <Badge color="blue">{variant.sizes.length} size</Badge>
+                      ) : (
+                        variant.price != null && <span className="text-xs text-gray-500">{formatCurrency(variant.price)}</span>
+                      )}
+                      <button onClick={() => removeVariant(vIdx)} className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    {openVariantIdx === vIdx && (
+                      <div className="p-4 space-y-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <Input label="Nama Variant" value={variant.name} onChange={(e) => updateVariant(vIdx, { name: e.target.value })} placeholder="cth. Hitam, Merah" error={errors[`variant-name-${vIdx}`]} />
+                          {!hasSize && (
+                            <Input label="SKU Variant" value={variant.sku} onChange={(e) => updateVariant(vIdx, { sku: e.target.value })} placeholder="cth. AP-HP-BLK" error={errors[`variant-sku-${vIdx}`]} />
+                          )}
+                        </div>
+
+                        <div className="flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+                          <div>
+                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Varian ini punya Ukuran</p>
+                            <p className="text-xs text-gray-500">Aktifkan jika varian ini memiliki ukuran (S, M, L, dll)</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateVariant(
+                                vIdx,
+                                hasSize
+                                  ? { sizes: [] }
+                                  : {
+                                      sku: '',
+                                      price: null,
+                                      stock: null,
+                                      sizes: [{ name: '', sku: '', price: 0, stock: 0, isActive: true }],
+                                    }
+                              )
+                            }
+                            className={`relative h-6 w-11 rounded-full transition-colors overflow-hidden shrink-0 ${hasSize ? 'bg-brand-600' : 'bg-gray-200 dark:bg-gray-700'}`}
+                          >
+                            <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${hasSize ? 'translate-x-5' : 'translate-x-0'}`} />
+                          </button>
+                        </div>
+
+                        {/* ── FIX 2: CurrencyInput untuk harga variant ──── */}
                         {!hasSize && (
-                          <Input label="SKU Variant" value={variant.sku} onChange={(e) => updateVariant(vIdx, { sku: e.target.value })} placeholder="cth. AP-HP-BLK" error={errors[`variant-sku-${vIdx}`]} />
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <CurrencyInput
+                              label="Harga Variant (Rp)"
+                              value={String(variant.price ?? '')}
+                              onChange={(v) => updateVariant(vIdx, { price: v === '' ? null : parseInt(v, 10) })}
+                              placeholder="0"
+                              error={errors[`variant-price-${vIdx}`]}
+                            />
+                            <Input label="Stok Variant" type="number" value={String(variant.stock ?? '')} onChange={(e) => updateVariant(vIdx, { stock: parseInt(e.target.value, 10) || 0 })} placeholder="0" />
+                          </div>
+                        )}
+
+                        {hasSize && (
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300">Ukuran</h5>
+                              <Button size="sm" variant="outline" onClick={() => addSize(vIdx)}><Plus className="h-3.5 w-3.5" /> Tambah Size</Button>
+                            </div>
+
+                            {/* Bulk stock setter */}
+                            <BulkStockSetter
+                              onApply={(val) => {
+                                setVariants((prev) =>
+                                  prev.map((v, i) =>
+                                    i === vIdx
+                                      ? { ...v, sizes: v.sizes.map((s) => ({ ...s, stock: val })) }
+                                      : v
+                                  )
+                                );
+                              }}
+                            />
+
+                            {variant.sizes.map((size, sIdx) => (
+                              <div key={sIdx} className="rounded-lg border border-gray-200 dark:border-gray-700 p-3 bg-gray-50/50 dark:bg-gray-800/30">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <span className="text-xs font-bold text-gray-400 shrink-0">S{sIdx + 1}</span>
+                                  <span className="text-sm text-gray-900 dark:text-gray-100 flex-1 truncate">{size.name || 'Ukuran'}</span>
+                                  <button onClick={() => removeSize(vIdx, sIdx)} className="p-1 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shrink-0">
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                                  <Input label="Ukuran" value={size.name} onChange={(e) => updateSize(vIdx, sIdx, { name: e.target.value })} placeholder="cth. S, M, L, XL" error={errors[`size-name-${vIdx}-${sIdx}`]} />
+                                  <Input label="SKU" value={size.sku} onChange={(e) => updateSize(vIdx, sIdx, { sku: e.target.value })} placeholder="cth. AP-HP-BLK-S" error={errors[`size-sku-${vIdx}-${sIdx}`]} />
+                                  {/* ── FIX 2: CurrencyInput untuk harga size ── */}
+                                  <CurrencyInput
+                                    label="Harga (Rp)"
+                                    value={String(size.price || '')}
+                                    onChange={(v) => updateSize(vIdx, sIdx, { price: v === '' ? 0 : parseInt(v, 10) })}
+                                    placeholder="0"
+                                    error={errors[`size-price-${vIdx}-${sIdx}`]}
+                                  />
+                                  <Input label="Stok" type="number" value={String(size.stock)} onChange={(e) => updateSize(vIdx, sIdx, { stock: parseInt(e.target.value, 10) || 0 })} placeholder="0" />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         )}
                       </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </Modal>
 
-                      <div className="flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-700 p-3">
-                        <div>
-                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Varian ini punya Ukuran</p>
-                          <p className="text-xs text-gray-500">Aktifkan jika varian ini memiliki ukuran (S, M, L, dll)</p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            updateVariant(
-                              vIdx,
-                              hasSize
-                                ? {
-                                    sizes: [],
-                                  }
-                                : {
-                                    sku: '',          // <-- tambahin
-                                    price: null,
-                                    stock: null,
-                                    sizes: [
-                                      {
-                                        name: '',
-                                        sku: '',
-                                        price: 0,
-                                        stock: 0,
-                                        isActive: true,
-                                      },
-                                    ],
-                              }
-                            )
-                          }
-                          className={`relative h-6 w-11 rounded-full transition-colors overflow-hidden shrink-0 ${hasSize ? 'bg-brand-600' : 'bg-gray-200 dark:bg-gray-700'}`}
-                        >
-                          <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${hasSize ? 'translate-x-5' : 'translate-x-0'}`} />
-                        </button>
-                      </div>
-
-                      {!hasSize && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <Input label="Harga Variant (Rp)" type="number" value={String(variant.price ?? '')} onChange={(e) => updateVariant(vIdx, { price: parseFloat(e.target.value) || null })} placeholder="0" error={errors[`variant-price-${vIdx}`]} />
-                          <Input label="Stok Variant" type="number" value={String(variant.stock ?? '')} onChange={(e) => updateVariant(vIdx, { stock: parseInt(e.target.value, 10) || 0 })} placeholder="0" />
-                        </div>
-                      )}
-
-                      {hasSize && (
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between">
-                            <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300">Ukuran</h5>
-                            <Button size="sm" variant="outline" onClick={() => addSize(vIdx)}><Plus className="h-3.5 w-3.5" /> Tambah Size</Button>
-                          </div>
-
-                          {variant.sizes.map((size, sIdx) => (
-                            <div key={sIdx} className="rounded-lg border border-gray-200 dark:border-gray-700 p-3 bg-gray-50/50 dark:bg-gray-800/30">
-                              <div className="flex items-center gap-2 mb-3">
-                                <span className="text-xs font-bold text-gray-400 shrink-0">S{sIdx + 1}</span>
-                                <span className="text-sm text-gray-900 dark:text-gray-100 flex-1 truncate">{size.name || 'Ukuran'}</span>
-                                <button onClick={() => removeSize(vIdx, sIdx)} className="p-1 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shrink-0">
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                </button>
-                              </div>
-                              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                                <Input label="Ukuran" value={size.name} onChange={(e) => updateSize(vIdx, sIdx, { name: e.target.value })} placeholder="cth. S, M, L, XL" error={errors[`size-name-${vIdx}-${sIdx}`]} />
-                                <Input label="SKU" value={size.sku} onChange={(e) => updateSize(vIdx, sIdx, { sku: e.target.value })} placeholder="cth. AP-HP-BLK-S" error={errors[`size-sku-${vIdx}-${sIdx}`]} />
-                                <Input label="Harga (Rp)" type="number" value={String(size.price)} onChange={(e) => updateSize(vIdx, sIdx, { price: parseFloat(e.target.value) || 0 })} placeholder="0" error={errors[`size-price-${vIdx}-${sIdx}`]} />
-                                <Input label="Stok" type="number" value={String(size.stock)} onChange={(e) => updateSize(vIdx, sIdx, { stock: parseInt(e.target.value, 10) || 0 })} placeholder="0" />
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    </Modal>
+      {/* ── FIX 1: Unsaved changes confirmation modal ─────────────────── */}
+      <Modal
+        open={confirmOpen}
+        onClose={cancelLeave}
+        title="Keluar tanpa menyimpan?"
+        size="sm"
+        footer={
+          <>
+            <Button variant="outline" onClick={cancelLeave}>Tetap di sini</Button>
+            <Button variant="danger" onClick={confirmLeave}>Keluar</Button>
+          </>
+        }
+      >
+        <p className="text-sm text-gray-600 dark:text-gray-300">
+          Kamu punya perubahan yang belum disimpan. Kalau keluar sekarang, semua perubahan akan hilang.
+        </p>
+      </Modal>
+    </>
   );
 }

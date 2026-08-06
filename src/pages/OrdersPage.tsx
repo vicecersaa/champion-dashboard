@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Search, Eye, ShoppingCart, Package, MapPin, Truck, X, ChevronLeft, ChevronRight, Save } from 'lucide-react';
+import { Search, Eye, ShoppingCart, Package, MapPin, Truck, X, ChevronLeft, ChevronRight, Save, Link, MessageCircle } from 'lucide-react';
 import { Card, CardHeader } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
@@ -49,6 +49,7 @@ export function OrdersPage() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | OrderStatus>('all');
+  const [ongkirFilter, setOngkirFilter] = useState<'all' | 'pending_ongkir'>('all');
   const [page, setPage] = useState(1);
 
   const [selected, setSelected] = useState<Order | null>(null);
@@ -56,6 +57,12 @@ export function OrdersPage() {
   const [detailPaymentStatus, setDetailPaymentStatus] = useState<PaymentStatus>('pending');
   const [detailShippingStatus, setDetailShippingStatus] = useState<ShippingStatus>('unfulfilled');
   const [saving, setSaving] = useState(false);
+
+  const [ongkirCost, setOngkirCost] = useState('');
+  const [isCOD, setIsCOD] = useState(false);
+  const [savingOngkir, setSavingOngkir] = useState(false);
+  const [generatedLink, setGeneratedLink] = useState<string | null>(null);
+  const [generatingLink, setGeneratingLink] = useState(false);
 
   const loadOrders = useCallback(async () => {
     setLoading(true);
@@ -66,6 +73,7 @@ export function OrdersPage() {
         limit: PER_PAGE,
         search: search || undefined,
         status: statusFilter === 'all' ? undefined : statusFilter,
+        shippingCostStatus: ongkirFilter === 'all' ? undefined : ongkirFilter,
       });
       setOrders(result.items);
       setTotalItems(result.pagination.totalItems);
@@ -74,7 +82,7 @@ export function OrdersPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, statusFilter]);
+  }, [page, search, statusFilter, ongkirFilter]);
 
   useEffect(() => {
     loadOrders();
@@ -82,7 +90,7 @@ export function OrdersPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [search, statusFilter]);
+  }, [search, statusFilter, ongkirFilter]);
 
   const totalPages = Math.max(1, Math.ceil(totalItems / PER_PAGE));
 
@@ -91,10 +99,18 @@ export function OrdersPage() {
     setDetailStatus(order.status);
     setDetailPaymentStatus(order.paymentStatus);
     setDetailShippingStatus(order.shippingStatus);
+    setOngkirCost(order.shippingCost ? String(order.shippingCost) : '');
+    setIsCOD(order.isCOD || false);
+    setGeneratedLink(
+      order.checkoutToken
+        ? `https://forlandliving.com/checkout?order_id=${order._id}&token=${order.checkoutToken}`
+        : null
+    );
   }, []);
 
   const closeDetail = useCallback(() => {
     setSelected(null);
+    setGeneratedLink(null);
   }, []);
 
   const hasChanges = selected
@@ -108,7 +124,6 @@ export function OrdersPage() {
     setSaving(true);
     try {
       let updated = selected;
-
       if (detailStatus !== selected.status) {
         updated = await api.updateOrderStatus(selected._id, detailStatus);
       }
@@ -118,7 +133,6 @@ export function OrdersPage() {
       if (detailShippingStatus !== selected.shippingStatus) {
         updated = await api.updateOrderShippingStatus(selected._id, detailShippingStatus);
       }
-
       setOrders((prev) => prev.map((o) => (o._id === updated._id ? updated : o)));
       setSelected(updated);
       toast('Perubahan pesanan berhasil disimpan', 'success');
@@ -128,6 +142,42 @@ export function OrdersPage() {
       setSaving(false);
     }
   }, [selected, hasChanges, detailStatus, detailPaymentStatus, detailShippingStatus, toast]);
+
+  const handleSaveOngkir = useCallback(async () => {
+    if (!selected) return;
+    setSavingOngkir(true);
+    try {
+      const updated = await api.setOngkir(selected._id, {
+        isCOD,
+        shippingCost: isCOD ? 0 : Number(ongkirCost),
+      });
+      setOrders((prev) => prev.map((o) => (o._id === updated._id ? updated : o)));
+      setSelected(updated);
+      toast('Ongkir berhasil disimpan', 'success');
+
+      // Auto-generate link langsung setelah simpan ongkir
+      setGeneratingLink(true);
+      try {
+        const result = await api.generateCheckoutLink(updated._id);
+        setGeneratedLink(result.link);
+        navigator.clipboard.writeText(result.link);
+        toast('Link checkout otomatis dibuat & dicopy!', 'success');
+      } catch (e) {
+        toast(e instanceof Error ? e.message : 'Gagal generate link', 'error');
+      } finally {
+        setGeneratingLink(false);
+      }
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Gagal menyimpan ongkir', 'error');
+    } finally {
+      setSavingOngkir(false);
+    }
+  }, [selected, isCOD, ongkirCost, toast]);
+
+  const displayLink = generatedLink ||
+  (selected?.checkoutToken
+    ? `https://forlandliving.com/checkout?order_id=${selected._id}&token=${selected.checkoutToken}`
+    : null);
 
   return (
     <div className="space-y-4">
@@ -140,17 +190,27 @@ export function OrdersPage() {
           icon={<Search className="h-4 w-4" />}
           className="sm:w-full"
         />
-        <Select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as 'all' | OrderStatus)}
-          className="sm:w-44"
-        >
-          <option value="all">Semua Status</option>
-          <option value="pending">Pending</option>
-          <option value="processing">Diproses</option>
-          <option value="completed">Selesai</option>
-          <option value="cancelled">Dibatalkan</option>
-        </Select>
+        <div className="flex gap-2">
+          <Select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as 'all' | OrderStatus)}
+            className="sm:w-44"
+          >
+            <option value="all">Semua Status</option>
+            <option value="pending">Pending</option>
+            <option value="processing">Diproses</option>
+            <option value="completed">Selesai</option>
+            <option value="cancelled">Dibatalkan</option>
+          </Select>
+          <Select
+            value={ongkirFilter}
+            onChange={(e) => setOngkirFilter(e.target.value as 'all' | 'pending_ongkir')}
+            className="sm:w-44"
+          >
+            <option value="all">Semua Ongkir</option>
+            <option value="pending_ongkir">Pending Ongkir</option>
+          </Select>
+        </div>
       </div>
 
       <Card>
@@ -193,7 +253,16 @@ export function OrdersPage() {
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                   {orders.map((o) => (
                     <tr key={o._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
-                      <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{o.orderNumber}</td>
+                      <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">
+                        <div className="flex items-center gap-2">
+                          {o.orderNumber}
+                          {o.shippingCostStatus === 'pending_ongkir' && (
+                            <span className="inline-flex items-center rounded-full bg-orange-100 dark:bg-orange-900/30 px-2 py-0.5 text-[10px] font-medium text-orange-600 dark:text-orange-400">
+                              Pending Ongkir
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-2.5">
                           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-purple-500 text-xs font-semibold text-white shrink-0">
@@ -246,6 +315,11 @@ export function OrdersPage() {
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge color={ORDER_STATUS_COLOR[o.status]} dot>{ORDER_STATUS_LABEL[o.status]}</Badge>
                     <Badge color={PAYMENT_STATUS_COLOR[o.paymentStatus]} dot>{PAYMENT_STATUS_LABEL[o.paymentStatus]}</Badge>
+                    {o.shippingCostStatus === 'pending_ongkir' && (
+                      <span className="inline-flex items-center rounded-full bg-orange-100 dark:bg-orange-900/30 px-2 py-0.5 text-[10px] font-medium text-orange-600 dark:text-orange-400">
+                        Pending Ongkir
+                      </span>
+                    )}
                     <span className="text-xs text-gray-400">{formatDate(o.createdAt)}</span>
                   </div>
                 </button>
@@ -259,20 +333,10 @@ export function OrdersPage() {
                   Halaman {page} dari {totalPages}
                 </p>
                 <div className="flex items-center gap-1">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={page <= 1}
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  >
+                  <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={page >= totalPages}
-                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  >
+                  <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>
@@ -301,7 +365,7 @@ export function OrdersPage() {
       >
         {selected && (
           <div className="space-y-6">
-            {/* Shipping / recipient info */}
+            {/* Shipping info */}
             <div className="rounded-xl border border-gray-200 dark:border-gray-800 p-4">
               <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3 flex items-center gap-1.5">
                 <MapPin className="h-3.5 w-3.5" /> Informasi Pengiriman
@@ -336,6 +400,80 @@ export function OrdersPage() {
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">Catatan: {selected.notes}</p>
               )}
             </div>
+
+            {/* Pending Ongkir Section */}
+            {selected.shippingCostStatus === 'pending_ongkir' && (
+              <div className="rounded-xl border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/10 p-4">
+                <h4 className="text-xs font-semibold text-orange-600 dark:text-orange-400 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                  <MessageCircle className="h-3.5 w-3.5" /> Konfirmasi Ongkir
+                </h4>
+                <p className="text-xs text-orange-500/80 dark:text-orange-400/70 mb-4 leading-relaxed">
+                  Aktifkan <strong>COD</strong> jika pelanggan bayar langsung saat barang tiba, atau masukkan{' '}
+                  <strong>nominal ongkir</strong> jika pelanggan perlu membayar ongkos kirim via transfer.
+                  Setelah disimpan, link checkout akan otomatis dibuat.
+                </p>
+
+                {/* Toggle COD */}
+                <label className="flex items-center gap-3 mb-4 cursor-pointer">
+                  <div
+                    onClick={() => setIsCOD(prev => !prev)}
+                    className={`relative h-5 w-9 rounded-full transition-colors cursor-pointer ${isCOD ? 'bg-brand-500' : 'bg-gray-300 dark:bg-gray-600'}`}
+                  >
+                    <div className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${isCOD ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                  </div>
+                  <span className="text-sm text-gray-700 dark:text-gray-200">COD (bayar di tempat)</span>
+                </label>
+
+                {/* Input ongkir */}
+                {!isCOD && (
+                  <div className="mb-4">
+                    <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Nominal Ongkir (Rp)</label>
+                    <input
+                      type="number"
+                      value={ongkirCost}
+                      onChange={(e) => setOngkirCost(e.target.value)}
+                      placeholder="Contoh: 200000"
+                      className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-brand-500"
+                    />
+                  </div>
+                )}
+
+                <Button
+                  onClick={handleSaveOngkir}
+                  disabled={savingOngkir || generatingLink || (!isCOD && !ongkirCost)}
+                  size="sm"
+                >
+                  <Save className="h-4 w-4" />
+                  {savingOngkir ? 'Menyimpan...' : generatingLink ? 'Membuat link...' : 'Simpan Ongkir'}
+                </Button>
+              </div>
+            )}
+
+            {/* Link Checkout Section — tampil setelah ongkir settled & link sudah ada */}
+            {selected.shippingCostStatus === 'settled' && displayLink && (
+              <div>
+                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
+                  <Link className="h-3.5 w-3.5" /> Link Checkout
+                </p>
+                <div className="flex items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 px-3 py-2">
+                  <span className="flex-1 truncate text-xs font-mono text-gray-500 dark:text-gray-400">
+                    {displayLink}
+                  </span>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(displayLink!);
+                      toast('Link dicopy!', 'success');
+                    }}
+                    className="shrink-0 inline-flex items-center gap-1.5 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2.5 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+                    </svg>
+                    Copy
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Order items */}
             <div>
@@ -387,7 +525,13 @@ export function OrdersPage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-500 dark:text-gray-400">Ongkir</span>
-                  <span className="text-gray-900 dark:text-gray-100">{formatCurrency(selected.shippingCost)}</span>
+                  <span className="text-gray-900 dark:text-gray-100">
+                    {selected.shippingCostStatus === 'pending_ongkir'
+                      ? <span className="text-orange-500 text-xs">Belum dikonfirmasi</span>
+                      : selected.isCOD
+                      ? 'COD'
+                      : formatCurrency(selected.shippingCost)}
+                  </span>
                 </div>
                 <div className="border-t border-gray-100 dark:border-gray-800 pt-2 flex items-center justify-between">
                   <span className="font-semibold text-gray-900 dark:text-gray-100">Total</span>

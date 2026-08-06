@@ -195,6 +195,10 @@ function buildProductFormData(
     formData.append("images", file);
   });
 
+  if (payload.imageOrder && payload.imageOrder.length > 0) {
+    formData.append("imageOrder", JSON.stringify(payload.imageOrder));
+  }
+
   if (payload.video) {
     formData.append("video", payload.video);
   }
@@ -593,20 +597,31 @@ async bulkDeleteProducts(ids: string[]): Promise<void> {
 
 },
 
-  async getOrders(
-    params: OrderQueryParams = {}
-  ): Promise<OrderListResponse> {
-    const query = new URLSearchParams();
+  async getOrders(params: OrderQueryParams = {}): Promise<OrderListResponse> {
+  const query = new URLSearchParams();
+  if (params.page) query.set('page', String(params.page));
+  if (params.limit) query.set('limit', String(params.limit));
+  if (params.search) query.set('search', params.search);
+  if (params.status) query.set('status', params.status);
+  if (params.sort) query.set('sort', params.sort);
+  if (params.shippingCostStatus) query.set('shippingCostStatus', params.shippingCostStatus);
 
-    if (params.page) query.set('page', String(params.page));
-    if (params.limit) query.set('limit', String(params.limit));
-    if (params.search) query.set('search', params.search);
-    if (params.status) query.set('status', params.status);
-    if (params.sort) query.set('sort', params.sort);
+  const qs = query.toString();
+  return apiFetch<OrderListResponse>(`/admin/orders${qs ? `?${qs}` : ''}`);
+},
 
-    const qs = query.toString();
-    return apiFetch<OrderListResponse>(`/admin/orders${qs ? `?${qs}` : ''}`);
-  },
+async setOngkir(id: string, payload: { isCOD: boolean; shippingCost?: number }): Promise<Order> {
+  return apiFetch<Order>(`/admin/orders/${id}/ongkir`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+},
+
+async generateCheckoutLink(id: string): Promise<{ link: string; token: string; expiry: string }> {
+  return apiFetch<{ link: string; token: string; expiry: string }>(`/admin/orders/${id}/generate-link`, {
+    method: 'POST',
+  });
+},
 
   async getOrderById(id: string): Promise<Order> {
     return apiFetch<Order>(`/admin/orders/${id}`);
@@ -685,5 +700,11 @@ async setProductThumbnail(id: string, image: string): Promise<Product> {
       method: "PATCH",
     }
   );
+},
+async reorderProductImages(id: string, images: string[]): Promise<Product> {
+  return apiFetch<Product>(`/admin/products/${id}/images/reorder`, {
+    method: 'PATCH',
+    body: JSON.stringify({ images }),
+  });
 }
 };
