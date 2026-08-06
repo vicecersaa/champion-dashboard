@@ -445,7 +445,7 @@ function CurrencyInput({ label, value, onChange, placeholder = '0', error }: Cur
   return (
     <div>
       {label && (
-        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
           {label}
         </label>
       )}
@@ -456,7 +456,7 @@ function CurrencyInput({ label, value, onChange, placeholder = '0', error }: Cur
         onChange={handleChange}
         onPaste={handlePaste}
         placeholder={placeholder}
-        className={`w-full h-10 rounded-lg border px-3 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all ${
+        className={`w-full h-10 rounded-lg border px-3 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all [color-scheme:light] dark:[color-scheme:dark] ${
           error
             ? 'border-red-400 focus:border-red-400 focus:ring-red-400/20'
             : 'border-gray-200 dark:border-gray-700'
