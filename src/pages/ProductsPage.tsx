@@ -1006,7 +1006,7 @@ function ProductFormModal({ product, categories, onClose, onSave }: FormModalPro
                                     const file = e.target.files?.[0];
                                     if (!file) return;
 
-                                    const isPersistedVariant = Boolean(product?._id);
+                                   const isPersistedVariant = Boolean(product?._id && variant._id);
 
                                     console.log('CHECK VARIANT:', {
                                       productId: product?._id,
