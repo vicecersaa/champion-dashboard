@@ -179,7 +179,6 @@ export function CouponsPage() {
 
       if (editing) {
         const updated = await api.updateCoupon(editing._id, payload);
-        // Jika kupon ini dijadikan popup, matikan popup kupon lain di local state
         setCoupons((prev) =>
           prev.map((c) => {
             if (c._id === updated._id) return updated;
@@ -190,7 +189,6 @@ export function CouponsPage() {
         toast('Kupon berhasil diperbarui', 'success');
       } else {
         const created = await api.createCoupon(payload);
-        // Jika kupon baru dijadikan popup, matikan popup kupon lain di local state
         if (created?.isPopup) {
           setCoupons((prev) =>
             prev.map((c) => (c.isPopup ? { ...c, isPopup: false } : c))
@@ -498,25 +496,60 @@ export function CouponsPage() {
             />
           </div>
 
-          <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={form.isActive}
-              onChange={(e) => setForm((prev) => ({ ...prev, isActive: e.target.checked }))}
-              className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-brand-600 focus:ring-brand-500"
-            />
-            Kupon aktif
-          </label>
-
-          {/* ── Popup Promo ── */}
+          {/* ── Status & Popup — satu card dengan divider ── */}
           <div className="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+
+            {/* Toggle: Kupon Aktif */}
             <button
               type="button"
-              onClick={() => {
-                // Kalau mau aktifkan popup tapi sudah ada yang lain, tetap izinkan —
-                // backend & local state akan mematikan yang lama saat save.
-                setForm((prev) => ({ ...prev, isPopup: !prev.isPopup }));
-              }}
+              onClick={() => setForm((prev) => ({ ...prev, isActive: !prev.isActive }))}
+              className={[
+                'w-full flex items-center justify-between gap-3 px-4 py-3 text-left transition-colors',
+                form.isActive
+                  ? 'bg-green-50 dark:bg-green-900/20'
+                  : 'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/40',
+              ].join(' ')}
+            >
+              <div className="flex items-center gap-3">
+                <div className={[
+                  'flex h-8 w-8 items-center justify-center rounded-lg shrink-0',
+                  form.isActive
+                    ? 'bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-400',
+                ].join(' ')}>
+                  <Ticket className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className={[
+                    'text-sm font-medium',
+                    form.isActive ? 'text-green-700 dark:text-green-300' : 'text-gray-700 dark:text-gray-300',
+                  ].join(' ')}>
+                    Kupon aktif
+                  </p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500">
+                    {form.isActive ? 'Kupon dapat digunakan oleh pelanggan' : 'Kupon tidak dapat digunakan'}
+                  </p>
+                </div>
+              </div>
+              {/* Toggle pill */}
+              <div className={[
+                'relative inline-flex h-5 w-9 shrink-0 rounded-full transition-colors duration-200',
+                form.isActive ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600',
+              ].join(' ')}>
+                <span className={[
+                  'absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform duration-200',
+                  form.isActive ? 'translate-x-4' : 'translate-x-0',
+                ].join(' ')} />
+              </div>
+            </button>
+
+            {/* Divider */}
+            <div className="border-t border-gray-100 dark:border-gray-700" />
+
+            {/* Toggle: Popup Promo */}
+            <button
+              type="button"
+              onClick={() => setForm((prev) => ({ ...prev, isPopup: !prev.isPopup }))}
               className={[
                 'w-full flex items-center justify-between gap-3 px-4 py-3 text-left transition-colors',
                 form.isPopup

@@ -300,12 +300,7 @@ export function GaransiPage() {
                 : 'Belum ada garansi yang terdaftar. Tambahkan garansi baru untuk pembelian yang masuk lewat WA.'
             }
           />
-          <div className="flex justify-center mt-4">
-            <Button variant="outline" size="sm" onClick={openCreate}>
-              <Plus className="h-3.5 w-3.5" />
-              Daftarkan Garansi Baru
-            </Button>
-          </div>
+          
         </Card>
       ) : (
         <Card className="!p-0 overflow-hidden">

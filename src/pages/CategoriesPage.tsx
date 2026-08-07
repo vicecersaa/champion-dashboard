@@ -231,7 +231,7 @@ export function CategoriesPage() {
             {categories.map((cat) => (
               <Card key={cat._id} hover className="overflow-hidden flex flex-col">
                 {/* Image / placeholder (16:9) */}
-                <div className="relative aspect-video bg-gray-100 dark:bg-gray-800">
+                <div className="relative aspect-video bg-gray-100 dark:bg-gray-800 h-48">
                   {cat.image ? (
                     <img src={cat.image} alt={cat.name} className="h-full w-full object-cover" />
                   ) : (
