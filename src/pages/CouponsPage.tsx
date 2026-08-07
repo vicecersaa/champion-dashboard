@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Plus, Pencil, Trash2, X, AlertTriangle, ChevronLeft, ChevronRight, Ticket, Search, Percent, Tag } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, AlertTriangle, ChevronLeft, ChevronRight, Ticket, Search, Percent, Tag, Megaphone } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
@@ -16,6 +16,8 @@ interface FormState {
   description: string;
   type: 'percentage' | 'fixed';
   value: string;
+  isPopup: boolean;
+  label: string;
   minimumPurchase: string;
   maximumDiscount: string;
   usageLimit: string;
@@ -30,6 +32,8 @@ const emptyForm: FormState = {
   description: '',
   type: 'percentage',
   value: '',
+  isPopup: false,
+  label: '',
   minimumPurchase: '',
   maximumDiscount: '',
   usageLimit: '',
@@ -104,6 +108,11 @@ export function CouponsPage() {
     setPage(1);
   }, [statusFilter, search]);
 
+  // Kupon lain yang saat ini jadi popup (selain yang sedang diedit)
+  const currentPopupCoupon = coupons.find(
+    (c) => c.isPopup && c.isActive && c._id !== editing?._id
+  );
+
   const openCreate = useCallback(() => {
     setEditing(null);
     setForm(emptyForm);
@@ -113,17 +122,19 @@ export function CouponsPage() {
   const openEdit = useCallback((coupon: Coupon) => {
     setEditing(coupon);
     setForm({
-    code: coupon.code,
-    description: coupon.description || '',
-    type: coupon.type,
-    value: String(coupon.value),
-    minimumPurchase: String(coupon.minimumPurchase ?? 0),
-    maximumDiscount: String(coupon.maximumDiscount ?? 0),
-    usageLimit: String(coupon.usageLimit ?? 0),
-    usagePerUser: String(coupon.usagePerUser ?? 1),
-    startDate: toDateInputValue(coupon.startDate),
-    endDate: toDateInputValue(coupon.endDate),
-    isActive: coupon.isActive,
+      code: coupon.code,
+      description: coupon.description || '',
+      type: coupon.type,
+      value: String(coupon.value),
+      isPopup: coupon.isPopup ?? false,
+      label: coupon.label || '',
+      minimumPurchase: String(coupon.minimumPurchase ?? 0),
+      maximumDiscount: String(coupon.maximumDiscount ?? 0),
+      usageLimit: String(coupon.usageLimit ?? 0),
+      usagePerUser: String(coupon.usagePerUser ?? 1),
+      startDate: toDateInputValue(coupon.startDate),
+      endDate: toDateInputValue(coupon.endDate),
+      isActive: coupon.isActive,
     });
     setFormOpen(true);
   }, []);
@@ -151,25 +162,40 @@ export function CouponsPage() {
     setSaving(true);
     try {
       const payload = {
-  code: form.code.trim().toUpperCase(),
-  description: form.description.trim(),
-  type: form.type,
-  value: Number(form.value) || 0,
-  minimumPurchase: Number(form.minimumPurchase) || 0,
-  maximumDiscount: Number(form.maximumDiscount) || 0,
-  usageLimit: Number(form.usageLimit) || 0,
-  usagePerUser: Number(form.usagePerUser) || 0,
-  startDate: form.startDate,
-  endDate: form.endDate,
-  isActive: form.isActive,
-     };
+        code: form.code.trim().toUpperCase(),
+        description: form.description.trim(),
+        type: form.type,
+        value: Number(form.value) || 0,
+        isPopup: form.isPopup,
+        label: form.label.trim(),
+        minimumPurchase: Number(form.minimumPurchase) || 0,
+        maximumDiscount: Number(form.maximumDiscount) || 0,
+        usageLimit: Number(form.usageLimit) || 0,
+        usagePerUser: Number(form.usagePerUser) || 0,
+        startDate: form.startDate,
+        endDate: form.endDate,
+        isActive: form.isActive,
+      };
 
       if (editing) {
         const updated = await api.updateCoupon(editing._id, payload);
-        setCoupons((prev) => prev.map((c) => (c._id === updated._id ? updated : c)));
+        // Jika kupon ini dijadikan popup, matikan popup kupon lain di local state
+        setCoupons((prev) =>
+          prev.map((c) => {
+            if (c._id === updated._id) return updated;
+            if (updated.isPopup && c.isPopup) return { ...c, isPopup: false };
+            return c;
+          })
+        );
         toast('Kupon berhasil diperbarui', 'success');
       } else {
-        await api.createCoupon(payload);
+        const created = await api.createCoupon(payload);
+        // Jika kupon baru dijadikan popup, matikan popup kupon lain di local state
+        if (created?.isPopup) {
+          setCoupons((prev) =>
+            prev.map((c) => (c.isPopup ? { ...c, isPopup: false } : c))
+          );
+        }
         toast('Kupon berhasil ditambahkan', 'success');
         loadCoupons();
       }
@@ -282,7 +308,12 @@ export function CouponsPage() {
                               {coupon.type === 'percentage' ? <Percent className="h-4 w-4" /> : <Tag className="h-4 w-4" />}
                             </div>
                             <div className="min-w-0">
-                              <p className="font-semibold text-gray-900 dark:text-gray-100 tracking-wide">{coupon.code}</p>
+                              <div className="flex items-center gap-2">
+                                <p className="font-semibold text-gray-900 dark:text-gray-100 tracking-wide">{coupon.code}</p>
+                                {coupon.isPopup && coupon.isActive && (
+                                  <Badge color="blue" dot>Popup</Badge>
+                                )}
+                              </div>
                               <p className="text-xs text-gray-400 dark:text-gray-500 truncate max-w-[180px]">
                                 {coupon.description || 'Tanpa deskripsi'}
                               </p>
@@ -347,7 +378,6 @@ export function CouponsPage() {
             </div>
           </Card>
 
-          {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-1">
               <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -409,31 +439,21 @@ export function CouponsPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <Input
-                type="text"
-                inputMode="numeric"
-                label={form.type === 'percentage' ? 'Nilai Diskon (%)' : 'Nilai Diskon (Rp)'}
-                value={form.value}
-                onChange={(e) =>
-                    setForm((prev) => ({
-                    ...prev,
-                    value: e.target.value.replace(/\D/g, ''),
-                    }))
-                }
-                />
+              type="text"
+              inputMode="numeric"
+              label={form.type === 'percentage' ? 'Nilai Diskon (%)' : 'Nilai Diskon (Rp)'}
+              value={form.value}
+              onChange={(e) => setForm((prev) => ({ ...prev, value: e.target.value.replace(/\D/g, '') }))}
+            />
             <Input
-                type="text"
-                inputMode="numeric"
-                label="Maks. Potongan (Rp)"
-                hint={form.type === 'fixed' ? 'Tidak berlaku untuk tipe nominal' : '0 = tanpa batas'}
-                value={form.maximumDiscount}
-                onChange={(e) =>
-                    setForm((prev) => ({
-                    ...prev,
-                    maximumDiscount: e.target.value.replace(/\D/g, ''),
-                    }))
-                }
-                disabled={form.type === 'fixed'}
-                />
+              type="text"
+              inputMode="numeric"
+              label="Maks. Potongan (Rp)"
+              hint={form.type === 'fixed' ? 'Tidak berlaku untuk tipe nominal' : '0 = tanpa batas'}
+              value={form.maximumDiscount}
+              onChange={(e) => setForm((prev) => ({ ...prev, maximumDiscount: e.target.value.replace(/\D/g, '') }))}
+              disabled={form.type === 'fixed'}
+            />
           </div>
 
           <Input
@@ -442,40 +462,25 @@ export function CouponsPage() {
             label="Minimum Pembelian (Rp)"
             hint="0 = tanpa minimum"
             value={form.minimumPurchase}
-            onChange={(e) =>
-                setForm((prev) => ({
-                ...prev,
-                minimumPurchase: e.target.value.replace(/\D/g, ''),
-                }))
-            }
-            />
+            onChange={(e) => setForm((prev) => ({ ...prev, minimumPurchase: e.target.value.replace(/\D/g, '') }))}
+          />
 
           <div className="grid grid-cols-2 gap-4">
             <Input
-                type="text"
-                inputMode="numeric"
-                label="Kuota Total Penggunaan"
-                hint="0 = tanpa batas"
-                value={form.usageLimit}
-                onChange={(e) =>
-                    setForm((prev) => ({
-                    ...prev,
-                    usageLimit: e.target.value.replace(/\D/g, ''),
-                    }))
-                }
-                />
+              type="text"
+              inputMode="numeric"
+              label="Kuota Total Penggunaan"
+              hint="0 = tanpa batas"
+              value={form.usageLimit}
+              onChange={(e) => setForm((prev) => ({ ...prev, usageLimit: e.target.value.replace(/\D/g, '') }))}
+            />
             <Input
-                type="text"
-                inputMode="numeric"
-                label="Batas per Pengguna"
-                value={form.usagePerUser}
-                onChange={(e) =>
-                    setForm((prev) => ({
-                    ...prev,
-                    usagePerUser: e.target.value.replace(/\D/g, ''),
-                    }))
-                }
-                />
+              type="text"
+              inputMode="numeric"
+              label="Batas per Pengguna"
+              value={form.usagePerUser}
+              onChange={(e) => setForm((prev) => ({ ...prev, usagePerUser: e.target.value.replace(/\D/g, '') }))}
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -502,6 +507,80 @@ export function CouponsPage() {
             />
             Kupon aktif
           </label>
+
+          {/* ── Popup Promo ── */}
+          <div className="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => {
+                // Kalau mau aktifkan popup tapi sudah ada yang lain, tetap izinkan —
+                // backend & local state akan mematikan yang lama saat save.
+                setForm((prev) => ({ ...prev, isPopup: !prev.isPopup }));
+              }}
+              className={[
+                'w-full flex items-center justify-between gap-3 px-4 py-3 text-left transition-colors',
+                form.isPopup
+                  ? 'bg-blue-50 dark:bg-blue-900/20'
+                  : 'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/40',
+              ].join(' ')}
+            >
+              <div className="flex items-center gap-3">
+                <div className={[
+                  'flex h-8 w-8 items-center justify-center rounded-lg shrink-0',
+                  form.isPopup
+                    ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-400',
+                ].join(' ')}>
+                  <Megaphone className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className={[
+                    'text-sm font-medium',
+                    form.isPopup ? 'text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300',
+                  ].join(' ')}>
+                    Tampilkan sebagai popup promo
+                  </p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500">
+                    Muncul otomatis di homepage untuk pengunjung
+                  </p>
+                </div>
+              </div>
+              {/* Toggle pill */}
+              <div className={[
+                'relative inline-flex h-5 w-9 shrink-0 rounded-full transition-colors duration-200',
+                form.isPopup ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600',
+              ].join(' ')}>
+                <span className={[
+                  'absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform duration-200',
+                  form.isPopup ? 'translate-x-4' : 'translate-x-0',
+                ].join(' ')} />
+              </div>
+            </button>
+
+            {/* Warning: ada popup aktif lain */}
+            {form.isPopup && currentPopupCoupon && (
+              <div className="flex items-start gap-2.5 px-4 py-3 bg-amber-50 dark:bg-amber-900/20 border-t border-amber-100 dark:border-amber-800/40">
+                <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-700 dark:text-amber-300">
+                  Kupon <span className="font-semibold">{currentPopupCoupon.code}</span> sedang aktif sebagai popup.
+                  Menyimpan akan otomatis menonaktifkan popup tersebut.
+                </p>
+              </div>
+            )}
+
+            {/* Label promo — hanya tampil saat isPopup aktif */}
+            {form.isPopup && (
+              <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900">
+                <Input
+                  label="Label Promo (opsional)"
+                  placeholder="Mis. Untuk semua produk pilihan"
+                  hint="Teks pendukung yang muncul di bawah diskon pada popup"
+                  value={form.label}
+                  onChange={(e) => setForm((prev) => ({ ...prev, label: e.target.value }))}
+                />
+              </div>
+            )}
+          </div>
         </div>
       </Modal>
 

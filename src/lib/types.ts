@@ -226,6 +226,8 @@ export interface Coupon {
   description: string;
   type: 'percentage' | 'fixed';
   value: number;
+  isPopup?: boolean;
+label?: string;
   minimumPurchase: number;
   maximumDiscount: number;
   usageLimit: number;
@@ -263,6 +265,8 @@ export interface CouponFormPayload {
   startDate: string;
   endDate: string;
   isActive: boolean;
+  isPopup: boolean;   // ← tambahin
+  label: string;      // ← tambahin
 }
 
 export interface ProductSize {
