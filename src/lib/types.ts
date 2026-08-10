@@ -99,6 +99,8 @@ export interface WarrantyFormPayload {
 
 // ---- Homepage Content ----
 
+// ---- Homepage Content ----
+
 export interface HomepageHero {
   badge: string;
   title: string;
@@ -109,15 +111,28 @@ export interface HomepageHero {
   secondaryCtaLink: string;
   smallText: string;
   image: string;
+  video: string;
 }
 
-export interface HomepagePromoCard {
-  label: string;
+export interface HomepageBestseller {
+  eyebrow: string;
   title: string;
-  description: string;
+  viewAllText: string;
+  viewAllLink: string;
+}
+
+export interface HomepageFlashDeals {
+  eyebrow: string;
+  title: string;
+  viewAllText: string;
+  viewAllLink: string;
+}
+
+export interface HomepagePromoStrip {
+  eyebrow: string;
+  text: string;
   ctaText: string;
   ctaLink: string;
-  image: string;
 }
 
 export interface HomepageCollectionItem {
@@ -135,14 +150,6 @@ export interface HomepageCollectionSection {
   items: HomepageCollectionItem[];
 }
 
-export interface HomepagePhilosophy {
-  label: string;
-  title: string;
-  paragraph1: string;
-  paragraph2: string;
-  image: string;
-}
-
 export interface HomepageCraftItem {
   number: string;
   title: string;
@@ -155,20 +162,6 @@ export interface HomepageCraftsmanship {
   intro: string;
   items: HomepageCraftItem[];
   image: string;
-}
-
-export interface HomepageMaterialStudy {
-  label: string;
-  title: string;
-  paragraph: string;
-  ctaText: string;
-  ctaLink: string;
-  image: string;
-}
-
-export interface HomepageGallery {
-  title: string;
-  images: string[];
 }
 
 export interface HomepageTestimonial {
@@ -193,33 +186,26 @@ export interface HomepageNewsletter {
 
 export interface HomepageContent {
   hero: HomepageHero;
-  promoCards: HomepagePromoCard[];
   collection: HomepageCollectionSection;
-  philosophy: HomepagePhilosophy;
+  bestseller: HomepageBestseller;
+  flashDeals: HomepageFlashDeals;
+  promoStrip: HomepagePromoStrip;
   craftsmanship: HomepageCraftsmanship;
-  materialStudy: HomepageMaterialStudy;
-  gallery: HomepageGallery;
   testimonials: HomepageTestimonialSection;
   newsletter: HomepageNewsletter;
   updatedAt?: string;
 }
 
-// Form state = sama seperti HomepageContent, tapi setiap field "image"
-// bisa berupa string (URL lama) ATAU File (upload baru)
 export interface HomepageFormState {
-  hero: Omit<HomepageHero, 'image'> & { image: string | File };
-  promoCards: (Omit<HomepagePromoCard, 'image'> & { image: string | File })[];
-  collection: Omit<HomepageCollectionSection, 'items'> & {
-    items: (Omit<HomepageCollectionItem, 'image'> & { image: string | File })[];
-  };
-  philosophy: Omit<HomepagePhilosophy, 'image'> & { image: string | File };
+  hero: Omit<HomepageHero, 'image' | 'video'> & { image: string | File; video: string | File };
+  collection: HomepageCollectionSection;
+  bestseller: HomepageBestseller;
+  flashDeals: HomepageFlashDeals;
+  promoStrip: HomepagePromoStrip;
   craftsmanship: Omit<HomepageCraftsmanship, 'image'> & { image: string | File };
-  materialStudy: Omit<HomepageMaterialStudy, 'image'> & { image: string | File };
-  gallery: Omit<HomepageGallery, 'images'> & { images: (string | File)[] };
   testimonials: HomepageTestimonialSection;
   newsletter: HomepageNewsletter;
 }
-
 export interface Coupon {
   _id: string;
   code: string;

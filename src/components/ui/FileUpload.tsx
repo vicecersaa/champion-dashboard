@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import { Upload, X, Film, Image as ImageIcon, Star } from 'lucide-react';
 
 interface FileUploadProps {
-  type: 'image' | 'video';
+  type: 'image' | 'video' | 'media';
   label: string;
   multiple?: boolean;
   maxFiles?: number;
@@ -64,14 +64,20 @@ export function FileUpload({
           className="w-full h-56 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-brand-500 hover:bg-brand-50/30 dark:hover:bg-brand-900/10 transition-all flex flex-col items-center justify-center"
         >
           {type === 'image' ? (
-            <ImageIcon className="h-12 w-12 text-gray-400 mb-3" />
-          ) : (
-            <Upload className="h-12 w-12 text-gray-400 mb-3" />
-          )}
+  <ImageIcon className="h-12 w-12 text-gray-400 mb-3" />
+) : type === 'video' ? (
+  <Upload className="h-12 w-12 text-gray-400 mb-3" />
+) : (
+  <Film className="h-12 w-12 text-gray-400 mb-3" />
+)}
 
-          <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
-            Klik untuk memilih {type === 'image' ? 'gambar' : 'video'}
-          </p>
+<p className="text-sm font-medium text-gray-700 dark:text-gray-200">
+  Klik untuk memilih {
+    type === 'image' ? 'gambar' :
+    type === 'video' ? 'video' :
+    'gambar atau video'
+  }
+</p>
 
           <p className="text-xs text-gray-500 mt-1">
             {multiple ? `Maksimal ${maxFiles} file` : 'Upload 1 file'}
@@ -165,13 +171,17 @@ export function FileUpload({
       )}
 
       <input
-        ref={inputRef}
-        type="file"
-        accept={type === 'image' ? 'image/*' : 'video/*'}
-        multiple={multiple}
-        onChange={handlePick}
-        className="hidden"
-      />
+  ref={inputRef}
+  type="file"
+  accept={
+    type === 'image' ? 'image/*' :
+    type === 'video' ? 'video/*' :
+    'image/*,video/*' 
+  }
+  multiple={multiple}
+  onChange={handlePick}
+  className="hidden"
+/>
     </div>
   );
 }

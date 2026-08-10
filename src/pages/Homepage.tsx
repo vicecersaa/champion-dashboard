@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   ChevronDown, Save, Plus, Trash2, Sparkles, LayoutGrid,
-  BookOpen, Hammer, Layers, Images, Quote, Mail,
+  Hammer, Quote, Mail, Tag, Zap, AlignLeft,
 } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -17,95 +17,54 @@ const DEFAULT_CONTENT: HomepageFormState = {
   hero: {
     badge: 'Koleksi Aera — Musim Semi',
     title: 'Cara yang lebih tenang mengakhiri hari.',
-    description:
-      'Bed dan kasur premium yang lahir dari keyakinan bahwa kenyamanan sejati bersifat tenang — material jujur, tangan yang tidak tergesa, dan ruang yang benar-benar mengistirahatkan Anda.',
-    primaryCtaText: 'Jelajahi Koleksi →',
+    description: 'Bed dan kasur premium yang lahir dari keyakinan bahwa kenyamanan sejati bersifat tenang — material jujur, tangan yang tidak tergesa, dan ruang yang benar-benar mengistirahatkan Anda.',
+    primaryCtaText: 'Jelajahi Koleksi',
     primaryCtaLink: '/shop',
     secondaryCtaText: 'Kenali Cerita Kami',
     secondaryCtaLink: '/about',
-    smallText: 'Est. 2014 — Oslo',
+    smallText: 'Est. 2020 — Forland Living',
     image: `${ASSET}/hero-bedroom-DUHq7D8r.jpg`,
+    video: '',
   },
-  promoCards: [
-    {
-      label: 'Gajian Sale',
-      title: 'Hemat Rp1.300.000',
-      description: 'Kasur premium + gratis ongkir Jabodetabek. Berakhir 30 hari lagi.',
-      ctaText: 'Belanja Sekarang →',
-      ctaLink: '/shop',
-      image: `${ASSET}/product-bed-1-BsybRGZO.jpg`,
-    },
-    {
-      label: 'Free Shipping',
-      title: 'Gratis Pengiriman',
-      description: 'Setiap pembelian kasur ke seluruh kota besar di Indonesia.',
-      ctaText: 'Lihat Koleksi →',
-      ctaLink: '/shop',
-      image: `${ASSET}/product-bed-2-BvhrFqxs.jpg`,
-    },
-    {
-      label: '10-Year Guarantee',
-      title: 'Jaminan Struktural',
-      description: 'Kepercayaan diri dari pengerjaan lokal yang jujur dan teruji.',
-      ctaText: 'Pelajari Lebih →',
-      ctaLink: '/shop',
-      image: `${ASSET}/gallery-1-BiJF-Jsy.jpg`,
-    },
-  ],
   collection: {
     label: 'Koleksi',
-    title: 'Disusun untuk sebuah ruang.',
+    title: 'Temukan ruang istirahat Anda.',
+    viewAllText: 'Semua Kategori',
+    viewAllLink: '/shop',
+    items: [],
+  },
+  bestseller: {
+    eyebrow: 'Paling Dicari',
+    title: 'Pilihan terbaik, menurut mereka.',
     viewAllText: 'Lihat Semua',
     viewAllLink: '/shop',
-    items: [
-      { title: 'Bed', subtitle: 'Rangka dari oak, walnut, dan pelapis linen.', link: '/shop', image: '' },
-      { title: 'Kasur', subtitle: 'Lima belas lapis dukungan yang tenang.', link: '/shop', image: '' },
-      { title: 'Kamar Tidur', subtitle: 'Sebuah ruang, dirancang menyeluruh.', link: '/shop', image: '' },
-      { title: 'Koleksi Baru', subtitle: 'Musim ini, diperkenalkan dengan lembut.', link: '/shop', image: '' },
-    ],
   },
-  philosophy: {
-    label: 'Filosofi Kami',
-    title: 'Kemewahan seharusnya terasa hidup, bukan dipertontonkan.',
-    paragraph1:
-      'Kami percaya bahwa istirahat adalah sebuah disiplin. Karena itu, setiap benda di sekitarnya kami rawat dengan sungguh-sungguh — bed yang membuat Anda melebur tanpa berpikir, kasur yang memeluk seperti tarikan napas panjang, dan linen yang semakin lembut seiring waktu.',
-    paragraph2:
-      'Tidak ada yang berteriak di sini. Semua ditempatkan dengan niat. Forland Living adalah praktik ketenangan — sebuah rumah berisi karya yang dibuat untuk melampaui tren, cuaca, dan hiruk pikuk hari.',
-    image: `${ASSET}/philosophy-CVA_1vnh.jpg`,
+  flashDeals: {
+    eyebrow: 'Diskon Forland Living',
+    title: 'Temuan diskon terbaik untuk Anda.',
+    viewAllText: 'Lihat Semua',
+    viewAllLink: '/shop',
+  },
+  promoStrip: {
+    eyebrow: 'Penawaran Aktif',
+    text: 'Diskon FORLAND hemat sebesar 10% untuk seluruh produk - minimum pembelian 1 juta.',
+    ctaText: 'Belanja Sekarang',
+    ctaLink: '/shop',
   },
   craftsmanship: {
     label: 'Pengerjaan',
     title: 'Dibuat perlahan, agar Anda dapat hidup perlahan.',
-    intro:
-      'Setiap karya Forland dimulai dari sebuah gambar dan diakhiri dengan tanda tangan. Di antara keduanya, berminggu-minggu pekerjaan yang terukur — tanpa jahitan yang terburu, tanpa material yang disembunyikan, tanpa jalan pintas.',
+    intro: 'Setiap karya Forland dimulai dari sebuah gambar dan diakhiri dengan tanda tangan. Di antara keduanya, berminggu-minggu pekerjaan yang terukur — tanpa jahitan yang terburu, tanpa material yang disembunyikan, tanpa jalan pintas.',
     items: [
       { number: '01', title: 'Material Jujur', description: 'Flax Eropa, latex alami, oak kering oven, dan wool murni.' },
-      { number: '02', title: 'Tangan Lokal', description: 'Setiap rangka dan kasur dirakit oleh tim kecil di Oslo.' },
+      { number: '02', title: 'Tangan Lokal', description: 'Setiap rangka dan kasur dirakit oleh tim kecil di Bogor.' },
       { number: '03', title: 'Kenyamanan Terukur', description: 'Lima belas lapis presisi, dipetakan sesuai lekuk tubuh.' },
       { number: '04', title: 'Dirancang untuk Berumur', description: 'Sambungan yang dapat diperbaiki. Garansi struktural 25 tahun.' },
     ],
     image: `${ASSET}/craftsmanship-CETQrU27.jpg`,
   },
-  materialStudy: {
-    label: 'Studi Material — N° 03',
-    title: 'Flax Belgia. Dilembutkan oleh cuaca, bukan kimia.',
-    paragraph:
-      'Linen kami berasal dari satu pabrik keluarga di West Flanders. Benangnya ditenun perlahan, lalu dicuci batu dalam air sungai hingga jatuh dengan sentuhan lembut dan hidup yang menjadi ciri setiap bed Forland.',
-    ctaText: 'Baca Jurnal Material →',
-    ctaLink: '/journal',
-    image: `${ASSET}/material-linen-BkWHxD46.jpg`,
-  },
-  gallery: {
-    title: 'Ruang yang bernapas.',
-    images: [
-      `${ASSET}/gallery-1-BiJF-Jsy.jpg`,
-      `${ASSET}/philosophy-CVA_1vnh.jpg`,
-      `${ASSET}/gallery-2-CTnh1ENj.jpg`,
-      `${ASSET}/product-bed-2-BvhrFqxs.jpg`,
-    ],
-  },
   testimonials: {
-    label: 'N° 04 · Ulasan',
+    label: 'Dari Rumah Forland',
     title: 'Suara dari mereka yang tidur di dalamnya.',
     testimonials: [
       { quote: 'Bed pertama yang saya miliki yang terasa menjadi bagian dari kamar, bukan dari katalog.', name: 'INES M.', location: 'Copenhagen', rating: 5 },
@@ -116,14 +75,12 @@ const DEFAULT_CONTENT: HomepageFormState = {
   newsletter: {
     label: 'Surat Berkala',
     title: 'Surat sesekali tentang istirahat, ruang, dan pembuatan karya yang tenang.',
-    buttonText: 'Berlangganan →',
+    buttonText: 'Berlangganan',
     disclaimer: 'Tidak lebih dari sekali sebulan. Berhenti langganan kapan saja.',
   },
 };
 
-function TextAreaField({
-  label, value, onChange, hint, rows = 3,
-}: { label: string; value: string; onChange: (v: string) => void; hint?: string; rows?: number }) {
+function TextAreaField({ label, value, onChange, rows = 3 }: { label: string; value: string; onChange: (v: string) => void; rows?: number }) {
   return (
     <div className="space-y-1.5">
       <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</label>
@@ -133,14 +90,11 @@ function TextAreaField({
         onChange={(e) => onChange(e.target.value)}
         className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 resize-none"
       />
-      {hint && <p className="text-xs text-gray-400">{hint}</p>}
     </div>
   );
 }
 
-function ImageField({
-  label, value, onChange,
-}: { label: string; value: string | File; onChange: (v: string | File) => void }) {
+function ImageField({ label, value, onChange }: { label: string; value: string | File; onChange: (v: string | File) => void }) {
   const isFile = value instanceof File;
   return (
     <FileUpload
@@ -200,21 +154,44 @@ export function Homepage() {
   const [activeSection, setActiveSection] = useState<string | null>('hero');
 
   const loadContent = useCallback(async () => {
-    setLoading(true);
-    try {
-      const result = await api.getHomepageContent();
-      setForm(result as unknown as HomepageFormState);
-    } catch {
-      // Belum ada data tersimpan di backend — tetap pakai draf awal (isi homepage saat ini)
-      toast('Belum ada konten tersimpan, menampilkan draf dari homepage saat ini', 'warning');
-    } finally {
-      setLoading(false);
-    }
-  }, [toast]);
+  setLoading(true);
+  try {
+    const result = await api.getHomepageContent();
+    const normalized = {
+      ...result,
+      hero: {
+        ...result.hero,
+        image: result.hero?.image ?? '',
+        video: result.hero?.video ?? '',
+      },
+      bestseller: result.bestseller ?? {
+        eyebrow: 'Paling Dicari',
+        title: 'Pilihan terbaik, menurut mereka.',
+        viewAllText: 'Lihat Semua',
+        viewAllLink: '/shop',
+      },
+      flashDeals: result.flashDeals ?? {
+        eyebrow: 'Diskon Forland Living',
+        title: 'Temuan diskon terbaik untuk Anda.',
+        viewAllText: 'Lihat Semua',
+        viewAllLink: '/shop',
+      },
+      promoStrip: result.promoStrip ?? {
+        eyebrow: 'Penawaran Aktif',
+        text: 'Diskon FORLAND hemat sebesar 10% untuk seluruh produk - minimum pembelian 1 juta.',
+        ctaText: 'Belanja Sekarang',
+        ctaLink: '/shop',
+      },
+    };
+    setForm(normalized as unknown as HomepageFormState);
+  } catch {
+    toast('Belum ada konten tersimpan, menampilkan draf dari homepage saat ini', 'warning');
+  } finally {
+    setLoading(false);
+  }
+}, [toast]);
 
-  useEffect(() => {
-    loadContent();
-  }, [loadContent]);
+  useEffect(() => { loadContent(); }, [loadContent]);
 
   const toggleSection = (id: string) => setActiveSection((prev) => (prev === id ? null : id));
 
@@ -231,23 +208,21 @@ export function Homepage() {
     }
   }, [form, toast]);
 
-  
-
   // ---- update helpers ----
   const updateHero = (patch: Partial<HomepageFormState['hero']>) =>
     setForm((f) => ({ ...f, hero: { ...f.hero, ...patch } }));
 
-  const updateCollectionMeta = (patch: Partial<Omit<HomepageFormState['collection'], 'items'>>) =>
+  const updateCollection = (patch: Partial<Omit<HomepageFormState['collection'], 'items'>>) =>
     setForm((f) => ({ ...f, collection: { ...f.collection, ...patch } }));
 
-  const updateCollectionItem = (idx: number, patch: Partial<HomepageFormState['collection']['items'][number]>) =>
-    setForm((f) => ({
-      ...f,
-      collection: { ...f.collection, items: f.collection.items.map((it, i) => (i === idx ? { ...it, ...patch } : it)) },
-    }));
+  const updateBestseller = (patch: Partial<HomepageFormState['bestseller']>) =>
+    setForm((f) => ({ ...f, bestseller: { ...f.bestseller, ...patch } }));
 
-  const updatePhilosophy = (patch: Partial<HomepageFormState['philosophy']>) =>
-    setForm((f) => ({ ...f, philosophy: { ...f.philosophy, ...patch } }));
+  const updateFlashDeals = (patch: Partial<HomepageFormState['flashDeals']>) =>
+    setForm((f) => ({ ...f, flashDeals: { ...f.flashDeals, ...patch } }));
+
+  const updatePromoStrip = (patch: Partial<HomepageFormState['promoStrip']>) =>
+    setForm((f) => ({ ...f, promoStrip: { ...f.promoStrip, ...patch } }));
 
   const updateCraftsmanshipMeta = (patch: Partial<Omit<HomepageFormState['craftsmanship'], 'items'>>) =>
     setForm((f) => ({ ...f, craftsmanship: { ...f.craftsmanship, ...patch } }));
@@ -260,15 +235,6 @@ export function Homepage() {
         items: f.craftsmanship.items.map((it, i) => (i === idx ? { ...it, ...patch } : it)),
       },
     }));
-
-  const updateMaterialStudy = (patch: Partial<HomepageFormState['materialStudy']>) =>
-    setForm((f) => ({ ...f, materialStudy: { ...f.materialStudy, ...patch } }));
-
-  const updateGalleryTitle = (title: string) =>
-    setForm((f) => ({ ...f, gallery: { ...f.gallery, title } }));
-
-  const updateGalleryImage = (idx: number, value: string | File) =>
-    setForm((f) => ({ ...f, gallery: { ...f.gallery, images: f.gallery.images.map((img, i) => (i === idx ? value : img)) } }));
 
   const updateTestimonialsMeta = (patch: Partial<Omit<HomepageFormState['testimonials'], 'testimonials'>>) =>
     setForm((f) => ({ ...f, testimonials: { ...f.testimonials, ...patch } }));
@@ -316,18 +282,10 @@ export function Homepage() {
         <p className="text-sm text-gray-500 dark:text-gray-400">
           Ubah copywriting dan gambar di halaman utama. Navbar &amp; footer tidak termasuk di sini.
         </p>
-        
       </div>
 
       {/* 1. Hero */}
-      <Section
-        id="hero"
-        icon={<Sparkles className="h-4 w-4" />}
-        title="Hero"
-        subtitle="Banner utama paling atas"
-        active={activeSection === 'hero'}
-        onToggle={() => toggleSection('hero')}
-      >
+      <Section id="hero" icon={<Sparkles className="h-4 w-4" />} title="Hero" subtitle="Banner utama paling atas" active={activeSection === 'hero'} onToggle={() => toggleSection('hero')}>
         <Input label="Badge Text" value={form.hero.badge} onChange={(e) => updateHero({ badge: e.target.value })} />
         <Input label="Judul" value={form.hero.title} onChange={(e) => updateHero({ title: e.target.value })} />
         <TextAreaField label="Deskripsi" value={form.hero.description} onChange={(v) => updateHero({ description: v })} />
@@ -339,69 +297,79 @@ export function Homepage() {
           <Input label="Teks Tombol Kedua" value={form.hero.secondaryCtaText} onChange={(e) => updateHero({ secondaryCtaText: e.target.value })} />
           <Input label="Link Tombol Kedua" value={form.hero.secondaryCtaLink} onChange={(e) => updateHero({ secondaryCtaLink: e.target.value })} />
         </div>
-        <Input label="Teks Kecil" value={form.hero.smallText} onChange={(e) => updateHero({ smallText: e.target.value })} hint='Mis. "Est. 2014 — Oslo"' />
-        <ImageField label="Gambar Hero" value={form.hero.image} onChange={(v) => updateHero({ image: v })} />
+        <Input label="Teks Kecil" value={form.hero.smallText} onChange={(e) => updateHero({ smallText: e.target.value })} />
+        <FileUpload
+          type="media"
+          label="Gambar / Video Hero"
+          multiple={false}
+          files={
+            form.hero.video instanceof File ? [form.hero.video] :
+            form.hero.image instanceof File ? [form.hero.image] : []
+          }
+          onFilesChange={(files) => {
+            const file = files[0];
+            if (!file) { updateHero({ video: '', image: '' }); return; }
+            if (file.type.startsWith('video/')) {
+              updateHero({ video: file, image: '' });
+            } else {
+              updateHero({ image: file, video: '' });
+            }
+          }}
+          existing={[
+            ...(typeof form.hero.video === 'string' && form.hero.video ? [form.hero.video] : []),
+            ...(typeof form.hero.image === 'string' && form.hero.image ? [form.hero.image] : []),
+          ]}
+        />
       </Section>
 
-      
-
-      {/* 3. Collection Grid */}
-      <Section
-        id="collection"
-        icon={<LayoutGrid className="h-4 w-4" />}
-        title="Grid Koleksi"
-        subtitle='"Disusun untuk sebuah ruang"'
-        active={activeSection === 'collection'}
-        onToggle={() => toggleSection('collection')}
-      >
+      {/* 2. Koleksi/Kategori */}
+      <Section id="collection" icon={<LayoutGrid className="h-4 w-4" />} title="Grid Koleksi" subtitle="Label, judul, tombol lihat semua" active={activeSection === 'collection'} onToggle={() => toggleSection('collection')}>
         <div className="grid grid-cols-2 gap-4">
-          <Input label="Label Section" value={form.collection.label} onChange={(e) => updateCollectionMeta({ label: e.target.value })} />
-          <Input label="Judul Section" value={form.collection.title} onChange={(e) => updateCollectionMeta({ title: e.target.value })} />
+          <Input label="Label Section" value={form.collection.label} onChange={(e) => updateCollection({ label: e.target.value })} />
+          <Input label="Judul Section" value={form.collection.title} onChange={(e) => updateCollection({ title: e.target.value })} />
         </div>
         <div className="grid grid-cols-2 gap-4">
-          <Input label='Teks "Lihat Semua"' value={form.collection.viewAllText} onChange={(e) => updateCollectionMeta({ viewAllText: e.target.value })} />
-          <Input label="Link Lihat Semua" value={form.collection.viewAllLink} onChange={(e) => updateCollectionMeta({ viewAllLink: e.target.value })} />
+          <Input label='Teks "Lihat Semua"' value={form.collection.viewAllText} onChange={(e) => updateCollection({ viewAllText: e.target.value })} />
+          <Input label="Link Lihat Semua" value={form.collection.viewAllLink} onChange={(e) => updateCollection({ viewAllLink: e.target.value })} />
         </div>
-        {form.collection.items.map((item, idx) => (
-          <div key={idx} className="p-4 rounded-lg border border-gray-100 dark:border-gray-800 space-y-3">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Item {idx + 1}</p>
-            <div className="grid grid-cols-2 gap-4">
-              <Input label="Judul" value={item.title} onChange={(e) => updateCollectionItem(idx, { title: e.target.value })} />
-              <Input label="Link" value={item.link} onChange={(e) => updateCollectionItem(idx, { link: e.target.value })} />
-            </div>
-            <Input label="Subjudul" value={item.subtitle} onChange={(e) => updateCollectionItem(idx, { subtitle: e.target.value })} />
-            <ImageField label="Gambar" value={item.image} onChange={(v) => updateCollectionItem(idx, { image: v })} />
-          </div>
-        ))}
       </Section>
 
-      {/* 4. Philosophy */}
-      <Section
-        id="philosophy"
-        icon={<BookOpen className="h-4 w-4" />}
-        title="Filosofi Kami"
-        subtitle="Section cerita brand"
-        active={activeSection === 'philosophy'}
-        onToggle={() => toggleSection('philosophy')}
-      >
+      {/* 3. Bestseller */}
+      <Section id="bestseller" icon={<Tag className="h-4 w-4" />} title="Produk Terlaris" subtitle='"Pilihan terbaik, menurut mereka"' active={activeSection === 'bestseller'} onToggle={() => toggleSection('bestseller')}>
         <div className="grid grid-cols-2 gap-4">
-          <Input label="Label" value={form.philosophy.label} onChange={(e) => updatePhilosophy({ label: e.target.value })} />
-          <Input label="Judul" value={form.philosophy.title} onChange={(e) => updatePhilosophy({ title: e.target.value })} />
+          <Input label="Eyebrow" value={form.bestseller.eyebrow} onChange={(e) => updateBestseller({ eyebrow: e.target.value })} />
+          <Input label="Judul" value={form.bestseller.title} onChange={(e) => updateBestseller({ title: e.target.value })} />
         </div>
-        <TextAreaField label="Paragraf 1" value={form.philosophy.paragraph1} onChange={(v) => updatePhilosophy({ paragraph1: v })} rows={3} />
-        <TextAreaField label="Paragraf 2" value={form.philosophy.paragraph2} onChange={(v) => updatePhilosophy({ paragraph2: v })} rows={3} />
-        <ImageField label="Gambar" value={form.philosophy.image} onChange={(v) => updatePhilosophy({ image: v })} />
+        <div className="grid grid-cols-2 gap-4">
+          <Input label='Teks "Lihat Semua"' value={form.bestseller.viewAllText} onChange={(e) => updateBestseller({ viewAllText: e.target.value })} />
+          <Input label="Link Lihat Semua" value={form.bestseller.viewAllLink} onChange={(e) => updateBestseller({ viewAllLink: e.target.value })} />
+        </div>
       </Section>
 
-      {/* 5. Craftsmanship */}
-      <Section
-        id="craftsmanship"
-        icon={<Hammer className="h-4 w-4" />}
-        title="Pengerjaan"
-        subtitle="4 poin proses pembuatan"
-        active={activeSection === 'craftsmanship'}
-        onToggle={() => toggleSection('craftsmanship')}
-      >
+      {/* 4. Flash Deals */}
+      <Section id="flashdeals" icon={<Zap className="h-4 w-4" />} title="Flash Deals" subtitle='"Temuan diskon terbaik"' active={activeSection === 'flashdeals'} onToggle={() => toggleSection('flashdeals')}>
+        <div className="grid grid-cols-2 gap-4">
+          <Input label="Eyebrow" value={form.flashDeals.eyebrow} onChange={(e) => updateFlashDeals({ eyebrow: e.target.value })} />
+          <Input label="Judul" value={form.flashDeals.title} onChange={(e) => updateFlashDeals({ title: e.target.value })} />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <Input label='Teks "Lihat Semua"' value={form.flashDeals.viewAllText} onChange={(e) => updateFlashDeals({ viewAllText: e.target.value })} />
+          <Input label="Link Lihat Semua" value={form.flashDeals.viewAllLink} onChange={(e) => updateFlashDeals({ viewAllLink: e.target.value })} />
+        </div>
+      </Section>
+
+      {/* 5. Promo Strip */}
+      <Section id="promostrip" icon={<AlignLeft className="h-4 w-4" />} title="Promo Strip" subtitle="Banner penawaran aktif" active={activeSection === 'promostrip'} onToggle={() => toggleSection('promostrip')}>
+        <Input label="Eyebrow" value={form.promoStrip.eyebrow} onChange={(e) => updatePromoStrip({ eyebrow: e.target.value })} />
+        <TextAreaField label="Teks Penawaran" value={form.promoStrip.text} onChange={(v) => updatePromoStrip({ text: v })} rows={2} />
+        <div className="grid grid-cols-2 gap-4">
+          <Input label="Teks Tombol" value={form.promoStrip.ctaText} onChange={(e) => updatePromoStrip({ ctaText: e.target.value })} />
+          <Input label="Link Tombol" value={form.promoStrip.ctaLink} onChange={(e) => updatePromoStrip({ ctaLink: e.target.value })} />
+        </div>
+      </Section>
+
+      {/* 6. Craftsmanship */}
+      <Section id="craftsmanship" icon={<Hammer className="h-4 w-4" />} title="Pengerjaan" subtitle="4 poin proses pembuatan" active={activeSection === 'craftsmanship'} onToggle={() => toggleSection('craftsmanship')}>
         <div className="grid grid-cols-2 gap-4">
           <Input label="Label" value={form.craftsmanship.label} onChange={(e) => updateCraftsmanshipMeta({ label: e.target.value })} />
           <Input label="Judul" value={form.craftsmanship.title} onChange={(e) => updateCraftsmanshipMeta({ title: e.target.value })} />
@@ -419,53 +387,8 @@ export function Homepage() {
         <ImageField label="Gambar" value={form.craftsmanship.image} onChange={(v) => updateCraftsmanshipMeta({ image: v })} />
       </Section>
 
-      {/* 6. Material Study */}
-      <Section
-        id="material"
-        icon={<Layers className="h-4 w-4" />}
-        title="Studi Material"
-        subtitle="Cerita bahan baku"
-        active={activeSection === 'material'}
-        onToggle={() => toggleSection('material')}
-      >
-        <div className="grid grid-cols-2 gap-4">
-          <Input label="Label" value={form.materialStudy.label} onChange={(e) => updateMaterialStudy({ label: e.target.value })} />
-          <Input label="Judul" value={form.materialStudy.title} onChange={(e) => updateMaterialStudy({ title: e.target.value })} />
-        </div>
-        <TextAreaField label="Paragraf" value={form.materialStudy.paragraph} onChange={(v) => updateMaterialStudy({ paragraph: v })} rows={3} />
-        <div className="grid grid-cols-2 gap-4">
-          <Input label="Teks CTA" value={form.materialStudy.ctaText} onChange={(e) => updateMaterialStudy({ ctaText: e.target.value })} />
-          <Input label="Link CTA" value={form.materialStudy.ctaLink} onChange={(e) => updateMaterialStudy({ ctaLink: e.target.value })} />
-        </div>
-        <ImageField label="Gambar" value={form.materialStudy.image} onChange={(v) => updateMaterialStudy({ image: v })} />
-      </Section>
-
-      {/* 7. Gallery */}
-      <Section
-        id="gallery"
-        icon={<Images className="h-4 w-4" />}
-        title="Galeri"
-        subtitle='"Rumah, Dalam Bidikan" — 4 gambar'
-        active={activeSection === 'gallery'}
-        onToggle={() => toggleSection('gallery')}
-      >
-        <Input label="Judul Section" value={form.gallery.title} onChange={(e) => updateGalleryTitle(e.target.value)} />
-        <div className="grid grid-cols-2 gap-4">
-          {form.gallery.images.map((img, idx) => (
-            <ImageField key={idx} label={`Gambar ${idx + 1}`} value={img} onChange={(v) => updateGalleryImage(idx, v)} />
-          ))}
-        </div>
-      </Section>
-
-      {/* 8. Testimonials */}
-      <Section
-        id="testimonials"
-        icon={<Quote className="h-4 w-4" />}
-        title="Testimoni"
-        subtitle="Ulasan pelanggan"
-        active={activeSection === 'testimonials'}
-        onToggle={() => toggleSection('testimonials')}
-      >
+      {/* 7. Testimoni */}
+      <Section id="testimonials" icon={<Quote className="h-4 w-4" />} title="Testimoni" subtitle="Ulasan pelanggan" active={activeSection === 'testimonials'} onToggle={() => toggleSection('testimonials')}>
         <div className="grid grid-cols-2 gap-4">
           <Input label="Label" value={form.testimonials.label} onChange={(e) => updateTestimonialsMeta({ label: e.target.value })} />
           <Input label="Judul" value={form.testimonials.title} onChange={(e) => updateTestimonialsMeta({ title: e.target.value })} />
@@ -474,11 +397,7 @@ export function Homepage() {
           <div key={idx} className="p-4 rounded-lg border border-gray-100 dark:border-gray-800 space-y-3">
             <div className="flex items-center justify-between">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Testimoni {idx + 1}</p>
-              <button
-                type="button"
-                onClick={() => removeTestimonial(idx)}
-                className="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 p-1 rounded"
-              >
+              <button type="button" onClick={() => removeTestimonial(idx)} className="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 p-1 rounded">
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
             </div>
@@ -486,12 +405,7 @@ export function Homepage() {
             <div className="grid grid-cols-3 gap-4">
               <Input label="Nama" value={t.name} onChange={(e) => updateTestimonial(idx, { name: e.target.value })} />
               <Input label="Lokasi" value={t.location} onChange={(e) => updateTestimonial(idx, { location: e.target.value })} />
-              <Input
-                type="number"
-                label="Rating (1-5)"
-                value={t.rating}
-                onChange={(e) => updateTestimonial(idx, { rating: Number(e.target.value) || 5 })}
-              />
+              <Input type="number" label="Rating (1-5)" value={t.rating} onChange={(e) => updateTestimonial(idx, { rating: Number(e.target.value) || 5 })} />
             </div>
           </div>
         ))}
@@ -501,15 +415,8 @@ export function Homepage() {
         </Button>
       </Section>
 
-      {/* 9. Newsletter */}
-      <Section
-        id="newsletter"
-        icon={<Mail className="h-4 w-4" />}
-        title="Newsletter"
-        subtitle="Section berlangganan surat"
-        active={activeSection === 'newsletter'}
-        onToggle={() => toggleSection('newsletter')}
-      >
+      {/* 8. Newsletter */}
+      <Section id="newsletter" icon={<Mail className="h-4 w-4" />} title="Newsletter" subtitle="Section berlangganan surat" active={activeSection === 'newsletter'} onToggle={() => toggleSection('newsletter')}>
         <div className="grid grid-cols-2 gap-4">
           <Input label="Label" value={form.newsletter.label} onChange={(e) => updateNewsletter({ label: e.target.value })} />
           <Input label="Teks Tombol" value={form.newsletter.buttonText} onChange={(e) => updateNewsletter({ buttonText: e.target.value })} />

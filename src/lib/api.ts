@@ -112,52 +112,33 @@ async function apiFetch<T>(
 function buildHomepageFormData(form: HomepageFormState): FormData {
   const fd = new FormData();
 
-  const appendImage = (key: string, value: string | File): string | null => {
+  const appendFile = (key: string, value: string | File): string | null => {
     if (value instanceof File) {
       fd.append(key, value);
-      return null; // null = "ada file baru diunggah di slot ini", backend isi dari file
+      return null;
     }
-    return value; // string url lama, tidak berubah
-  };
-
-  const metaHero = { ...form.hero, image: appendImage('heroImage', form.hero.image) };
-
-  const metaPromoCards = form.promoCards.map((c, i) => ({
-    ...c,
-    image: appendImage(`promoImage${i}`, c.image),
-  }));
-
-  const metaCollection = {
-    ...form.collection,
-    items: form.collection.items.map((it, i) => ({
-      ...it,
-      image: appendImage(`collectionImage${i}`, it.image),
-    })),
-  };
-
-  const metaPhilosophy = { ...form.philosophy, image: appendImage('philosophyImage', form.philosophy.image) };
-  const metaCraftsmanship = { ...form.craftsmanship, image: appendImage('craftImage', form.craftsmanship.image) };
-  const metaMaterialStudy = { ...form.materialStudy, image: appendImage('materialImage', form.materialStudy.image) };
-
-  const metaGallery = {
-    ...form.gallery,
-    images: form.gallery.images.map((img, i) => appendImage(`galleryImage${i}`, img)),
+    return value;
   };
 
   const meta = {
-    hero: metaHero,
-    promoCards: metaPromoCards,
-    collection: metaCollection,
-    philosophy: metaPhilosophy,
-    craftsmanship: metaCraftsmanship,
-    materialStudy: metaMaterialStudy,
-    gallery: metaGallery,
+    hero: {
+      ...form.hero,
+      image: appendFile('heroImage', form.hero.image),
+      video: appendFile('heroVideo', form.hero.video),
+    },
+    collection: form.collection,
+    bestseller: form.bestseller,
+    flashDeals: form.flashDeals,
+    promoStrip: form.promoStrip,
+    craftsmanship: {
+      ...form.craftsmanship,
+      image: appendFile('craftImage', form.craftsmanship.image),
+    },
     testimonials: form.testimonials,
     newsletter: form.newsletter,
   };
 
   fd.append('content', JSON.stringify(meta));
-
   return fd;
 }
 
