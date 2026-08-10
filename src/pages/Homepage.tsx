@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   ChevronDown, Save, Plus, Trash2, Sparkles, LayoutGrid,
-  Hammer, Quote, Mail, Tag, Zap, AlignLeft,
+  Hammer, Quote, Mail, Tag, Zap, AlignLeft, Grid2X2,
 } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -36,6 +36,12 @@ const DEFAULT_CONTENT: HomepageFormState = {
   bestseller: {
     eyebrow: 'Paling Dicari',
     title: 'Pilihan terbaik, menurut mereka.',
+    viewAllText: 'Lihat Semua',
+    viewAllLink: '/shop',
+  },
+  promoCards: {
+    eyebrow: 'Koleksi Terpilih',
+    title: 'Kesempurnaan di setiap sisi ruangan.',
     viewAllText: 'Lihat Semua',
     viewAllLink: '/shop',
   },
@@ -154,42 +160,48 @@ export function Homepage() {
   const [activeSection, setActiveSection] = useState<string | null>('hero');
 
   const loadContent = useCallback(async () => {
-  setLoading(true);
-  try {
-    const result = await api.getHomepageContent();
-    const normalized = {
-      ...result,
-      hero: {
-        ...result.hero,
-        image: result.hero?.image ?? '',
-        video: result.hero?.video ?? '',
-      },
-      bestseller: result.bestseller ?? {
-        eyebrow: 'Paling Dicari',
-        title: 'Pilihan terbaik, menurut mereka.',
-        viewAllText: 'Lihat Semua',
-        viewAllLink: '/shop',
-      },
-      flashDeals: result.flashDeals ?? {
-        eyebrow: 'Diskon Forland Living',
-        title: 'Temuan diskon terbaik untuk Anda.',
-        viewAllText: 'Lihat Semua',
-        viewAllLink: '/shop',
-      },
-      promoStrip: result.promoStrip ?? {
-        eyebrow: 'Penawaran Aktif',
-        text: 'Diskon FORLAND hemat sebesar 10% untuk seluruh produk - minimum pembelian 1 juta.',
-        ctaText: 'Belanja Sekarang',
-        ctaLink: '/shop',
-      },
-    };
-    setForm(normalized as unknown as HomepageFormState);
-  } catch {
-    toast('Belum ada konten tersimpan, menampilkan draf dari homepage saat ini', 'warning');
-  } finally {
-    setLoading(false);
-  }
-}, [toast]);
+    setLoading(true);
+    try {
+      const result = await api.getHomepageContent();
+      const normalized = {
+        ...result,
+        hero: {
+          ...result.hero,
+          image: result.hero?.image ?? '',
+          video: result.hero?.video ?? '',
+        },
+        bestseller: result.bestseller ?? {
+          eyebrow: 'Paling Dicari',
+          title: 'Pilihan terbaik, menurut mereka.',
+          viewAllText: 'Lihat Semua',
+          viewAllLink: '/shop',
+        },
+        promoCards: result.promoCards ?? {
+          eyebrow: 'Koleksi Terpilih',
+          title: 'Kesempurnaan di setiap sisi ruangan.',
+          viewAllText: 'Lihat Semua',
+          viewAllLink: '/shop',
+        },
+        flashDeals: result.flashDeals ?? {
+          eyebrow: 'Diskon Forland Living',
+          title: 'Temuan diskon terbaik untuk Anda.',
+          viewAllText: 'Lihat Semua',
+          viewAllLink: '/shop',
+        },
+        promoStrip: result.promoStrip ?? {
+          eyebrow: 'Penawaran Aktif',
+          text: 'Diskon FORLAND hemat sebesar 10% untuk seluruh produk - minimum pembelian 1 juta.',
+          ctaText: 'Belanja Sekarang',
+          ctaLink: '/shop',
+        },
+      };
+      setForm(normalized as unknown as HomepageFormState);
+    } catch {
+      toast('Belum ada konten tersimpan, menampilkan draf dari homepage saat ini', 'warning');
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
 
   useEffect(() => { loadContent(); }, [loadContent]);
 
@@ -217,6 +229,9 @@ export function Homepage() {
 
   const updateBestseller = (patch: Partial<HomepageFormState['bestseller']>) =>
     setForm((f) => ({ ...f, bestseller: { ...f.bestseller, ...patch } }));
+
+  const updatePromoCards = (patch: Partial<HomepageFormState['promoCards']>) =>
+    setForm((f) => ({ ...f, promoCards: { ...f.promoCards, ...patch } }));
 
   const updateFlashDeals = (patch: Partial<HomepageFormState['flashDeals']>) =>
     setForm((f) => ({ ...f, flashDeals: { ...f.flashDeals, ...patch } }));
@@ -346,7 +361,19 @@ export function Homepage() {
         </div>
       </Section>
 
-      {/* 4. Flash Deals */}
+      {/* 4. Koleksi Terpilih */}
+      <Section id="promocards" icon={<Grid2X2 className="h-4 w-4" />} title="Koleksi Terpilih" subtitle='"Kesempurnaan di setiap sisi ruangan"' active={activeSection === 'promocards'} onToggle={() => toggleSection('promocards')}>
+        <div className="grid grid-cols-2 gap-4">
+          <Input label="Eyebrow" value={form.promoCards.eyebrow} onChange={(e) => updatePromoCards({ eyebrow: e.target.value })} />
+          <Input label="Judul" value={form.promoCards.title} onChange={(e) => updatePromoCards({ title: e.target.value })} />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <Input label='Teks "Lihat Semua"' value={form.promoCards.viewAllText} onChange={(e) => updatePromoCards({ viewAllText: e.target.value })} />
+          <Input label="Link Lihat Semua" value={form.promoCards.viewAllLink} onChange={(e) => updatePromoCards({ viewAllLink: e.target.value })} />
+        </div>
+      </Section>
+
+      {/* 5. Flash Deals */}
       <Section id="flashdeals" icon={<Zap className="h-4 w-4" />} title="Flash Deals" subtitle='"Temuan diskon terbaik"' active={activeSection === 'flashdeals'} onToggle={() => toggleSection('flashdeals')}>
         <div className="grid grid-cols-2 gap-4">
           <Input label="Eyebrow" value={form.flashDeals.eyebrow} onChange={(e) => updateFlashDeals({ eyebrow: e.target.value })} />
@@ -358,7 +385,7 @@ export function Homepage() {
         </div>
       </Section>
 
-      {/* 5. Promo Strip */}
+      {/* 6. Promo Strip */}
       <Section id="promostrip" icon={<AlignLeft className="h-4 w-4" />} title="Promo Strip" subtitle="Banner penawaran aktif" active={activeSection === 'promostrip'} onToggle={() => toggleSection('promostrip')}>
         <Input label="Eyebrow" value={form.promoStrip.eyebrow} onChange={(e) => updatePromoStrip({ eyebrow: e.target.value })} />
         <TextAreaField label="Teks Penawaran" value={form.promoStrip.text} onChange={(v) => updatePromoStrip({ text: v })} rows={2} />
@@ -368,7 +395,7 @@ export function Homepage() {
         </div>
       </Section>
 
-      {/* 6. Craftsmanship */}
+      {/* 7. Craftsmanship */}
       <Section id="craftsmanship" icon={<Hammer className="h-4 w-4" />} title="Pengerjaan" subtitle="4 poin proses pembuatan" active={activeSection === 'craftsmanship'} onToggle={() => toggleSection('craftsmanship')}>
         <div className="grid grid-cols-2 gap-4">
           <Input label="Label" value={form.craftsmanship.label} onChange={(e) => updateCraftsmanshipMeta({ label: e.target.value })} />
@@ -387,7 +414,7 @@ export function Homepage() {
         <ImageField label="Gambar" value={form.craftsmanship.image} onChange={(v) => updateCraftsmanshipMeta({ image: v })} />
       </Section>
 
-      {/* 7. Testimoni */}
+      {/* 8. Testimoni */}
       <Section id="testimonials" icon={<Quote className="h-4 w-4" />} title="Testimoni" subtitle="Ulasan pelanggan" active={activeSection === 'testimonials'} onToggle={() => toggleSection('testimonials')}>
         <div className="grid grid-cols-2 gap-4">
           <Input label="Label" value={form.testimonials.label} onChange={(e) => updateTestimonialsMeta({ label: e.target.value })} />
@@ -415,7 +442,7 @@ export function Homepage() {
         </Button>
       </Section>
 
-      {/* 8. Newsletter */}
+      {/* 9. Newsletter */}
       <Section id="newsletter" icon={<Mail className="h-4 w-4" />} title="Newsletter" subtitle="Section berlangganan surat" active={activeSection === 'newsletter'} onToggle={() => toggleSection('newsletter')}>
         <div className="grid grid-cols-2 gap-4">
           <Input label="Label" value={form.newsletter.label} onChange={(e) => updateNewsletter({ label: e.target.value })} />

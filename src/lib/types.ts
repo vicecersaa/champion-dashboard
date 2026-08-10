@@ -128,6 +128,13 @@ export interface HomepageFlashDeals {
   viewAllLink: string;
 }
 
+export interface HomepagePromoCards {
+  eyebrow: string;
+  title: string;
+  viewAllText: string;
+  viewAllLink: string;
+}
+
 export interface HomepagePromoStrip {
   eyebrow: string;
   text: string;
@@ -190,6 +197,7 @@ export interface HomepageContent {
   bestseller: HomepageBestseller;
   flashDeals: HomepageFlashDeals;
   promoStrip: HomepagePromoStrip;
+  promoCards: HomepagePromoCards;
   craftsmanship: HomepageCraftsmanship;
   testimonials: HomepageTestimonialSection;
   newsletter: HomepageNewsletter;
@@ -202,6 +210,7 @@ export interface HomepageFormState {
   bestseller: HomepageBestseller;
   flashDeals: HomepageFlashDeals;
   promoStrip: HomepagePromoStrip;
+  promoCards: HomepagePromoCards;
   craftsmanship: Omit<HomepageCraftsmanship, 'image'> & { image: string | File };
   testimonials: HomepageTestimonialSection;
   newsletter: HomepageNewsletter;

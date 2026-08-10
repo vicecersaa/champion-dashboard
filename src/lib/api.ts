@@ -129,6 +129,7 @@ function buildHomepageFormData(form: HomepageFormState): FormData {
     collection: form.collection,
     bestseller: form.bestseller,
     flashDeals: form.flashDeals,
+    promoCards: form.promoCards,
     promoStrip: form.promoStrip,
     craftsmanship: {
       ...form.craftsmanship,
