@@ -54,17 +54,17 @@ export function LoginPage() {
               <ShoppingBag className="h-6 w-6 text-white" />
             </div>
             <div>
-              <p className="text-lg font-bold text-white leading-tight">Forland Living</p>
+              <p className="text-lg font-bold text-white leading-tight">Champion</p>
               <p className="text-sm text-white/70 leading-tight">Admin Panel</p>
             </div>
           </div>
         </div>
         <div className="relative z-10 space-y-6">
           <h1 className="text-4xl font-bold text-white leading-tight">
-            Forland Living
+            Champion
           </h1>
           <p className="text-lg text-white/80 leading-relaxed">
-            Dashboard admin untuk mengelola produk, pesanan, dan pelanggan Forland Living.
+            Dashboard admin untuk mengelola produk, pesanan, dan pelanggan Champion.
           </p>
           <div className="space-y-3 pt-4">
             {['Manajemen produk & variant lengkap', 'Pelacakan pesanan real-time', 'Analitik penjualan mendalam'].map((feat) => (
@@ -80,7 +80,7 @@ export function LoginPage() {
           </div>
         </div>
         <div className="relative z-10 text-sm text-white/60">
-          &copy; 2026 Forland Living. Semua hak dilindungi.
+          &copy; 2026 Champion. Semua hak dilindungi.
         </div>
       </div>
 
@@ -93,7 +93,7 @@ export function LoginPage() {
               <ShoppingBag className="h-5 w-5 text-white" />
             </div>
             <div>
-              <p className="text-base font-bold text-gray-900 dark:text-gray-100 leading-tight">Forland Living</p>
+              <p className="text-base font-bold text-gray-900 dark:text-gray-100 leading-tight">Champion</p>
               <p className="text-xs text-gray-400 leading-tight">Admin Panel</p>
             </div>
           </div>

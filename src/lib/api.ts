@@ -32,7 +32,7 @@ import type {
 
 
 const API_BASE_URL =
-  "https://api.forlandliving.com/api/v1";
+  "https://champion-backend-production.up.railway.app/api/v1";
 
 export interface DashboardSummary {
   todayRevenue: number;

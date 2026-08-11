@@ -55,7 +55,7 @@ export function Sidebar({ current, onNavigate, mobileOpen, onCloseMobile }: Side
               <ShoppingBag className="h-5 w-5 text-white" />
             </div>
             <div>
-              <p className="text-sm font-bold text-gray-900 dark:text-gray-100 leading-tight">Forland Living</p>
+              <p className="text-sm font-bold text-gray-900 dark:text-gray-100 leading-tight">Champion</p>
               <p className="text-xs text-gray-400 leading-tight">Admin Panel</p>
             </div>
           </div>
